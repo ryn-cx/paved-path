@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "paved-path"
+version = "0.1.0"
+description = "Library for working with files and file paths"
+authors = ["ryn-cx <84663588+ryn-cx@users.noreply.github.com>"]
+license = "GNU GPLv3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.9"
+pre-commit = "^3.6.0"
+pylint = "^3.0.3"
+flake8 = "^6.1.0"
+pytest = "^7.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
