@@ -22,3 +22,15 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["ANN101", "ANN102", "N804"]
+# ANN101 - missing-type-self - self doesn't need type hints because the type is known implicitly
+# ANN102 - missing-type-cls - cls doesn't need type hints because the type is known implicitly
+# N804 - non-pep604-annotation - Sometimes has false positives, and Pylance is more accurate
+
+[tool.ruff.extend-per-file-ignores]
+"test_*.py" = ["S101", "INP001"]
+# S101 - assert - Assert statements are fine in tests
+# INP001 - implicit-namespace-package - Tests are not packages and should not have __init__.py files
