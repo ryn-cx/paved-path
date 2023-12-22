@@ -41,9 +41,3 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
-
-  # Run flake8 to check for linting errors
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
