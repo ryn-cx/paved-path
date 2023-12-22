@@ -98,15 +98,6 @@ class PavedPath((type(Path()))):
             else:
                 shutil.rmtree(self)
 
-    def rm_dir(self, delete_contents: bool = False):
-        """Delete empty folders, or delete folders and their contents if delete_contents is True."""
-
-        if self.is_dir():
-            if delete_contents:
-                shutil.rmtree(self)
-            else:
-                self.rmdir()
-
     def read_text_cached(self, reload: bool = False, encoding: str = "utf-8"):
         """Read a file and cache the result to avoid reading the file multiple times."""
 
