@@ -138,7 +138,7 @@ class TestCachedRead:
         file = self.make_initial_file()
         file.read_text_cached()
         file.write("456")
-        assert file.force_read_text_cached() == "456"
+        assert file.read_text_cached(reload=True) == "456"
         file.delete()
 
     def test_read_bytes(self) -> None:
@@ -160,5 +160,5 @@ class TestCachedRead:
         file = self.make_initial_file()
         file.read_bytes_cached()
         file.write("456")
-        assert file.force_read_bytes_cached() == b"456"
+        assert file.read_bytes_cached(reload=True) == b"456"
         file.delete()

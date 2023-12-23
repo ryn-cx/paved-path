@@ -87,28 +87,16 @@ class PavedPath(type(Path())):
             else:
                 shutil.rmtree(self)
 
-    def read_text_cached(self, encoding: str = "utf-8") -> str:
+    def read_text_cached(self, encoding: None | str = None, *, reload: bool = False) -> str:
         """Read a file in text mode and cache the result to avoid reading the file multiple times."""
-        if not self.cached_content_value:
+        if not self.cached_content_value or reload:
             self.cached_content_value = self.read_text(encoding=encoding)
 
         return self.cached_content_value
 
-    def read_bytes_cached(self) -> bytes:
+    def read_bytes_cached(self, *, reload: bool = False) -> bytes:
         """Read a file in bytes mode and cache the result to avoid reading the file multiple times."""
-        if not self.read_bytes_cached_value:
+        if not self.read_bytes_cached_value or reload:
             self.read_bytes_cached_value = self.read_bytes()
-
-        return self.read_bytes_cached_value
-
-    def force_read_text_cached(self, encoding: str = "utf-8") -> str:
-        """Open a file in text mode and cache the value even if a value already exists."""
-        self.cached_content_value = self.read_text(encoding=encoding)
-
-        return self.cached_content_value
-
-    def force_read_bytes_cached(self) -> bytes:
-        """Open a file in byte mode and cache the value even if a value already exists."""
-        self.read_bytes_cached_value = self.read_bytes()
 
         return self.read_bytes_cached_value
