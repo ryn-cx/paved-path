@@ -28,7 +28,7 @@ class PavedPath(type(Path())):
     def __init__(self, *_args: PathableType) -> None:
         """Initialize the path object and set the cached values to None."""
         self.read_bytes_cached_value = None
-        self.cached_content_value = None
+        self.read_text_cached_value = None
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
@@ -88,14 +88,14 @@ class PavedPath(type(Path())):
                 shutil.rmtree(self)
 
     def read_text_cached(self, encoding: None | str = None, *, reload: bool = False) -> str:
-        """Read a file in text mode and cache the result to avoid reading the file multiple times."""
-        if not self.cached_content_value or reload:
-            self.cached_content_value = self.read_text(encoding=encoding)
+        """Read the file text and cache the result."""
+        if not self.read_text_cached_value or reload:
+            self.read_text_cached_value = self.read_text(encoding=encoding)
 
-        return self.cached_content_value
+        return self.read_text_cached_value
 
     def read_bytes_cached(self, *, reload: bool = False) -> bytes:
-        """Read a file in bytes mode and cache the result to avoid reading the file multiple times."""
+        """Read the file bytes and cache the result."""
         if not self.read_bytes_cached_value or reload:
             self.read_bytes_cached_value = self.read_bytes()
 
