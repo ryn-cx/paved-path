@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import os
-    from typing import Self, TypeVar
+    from typing import Self, TypeAlias
 
-    PathableType = TypeVar("PathableType", str, bytes, os.PathLike[str], int, datetime, date, float)
+    PathableType: TypeAlias = str | bytes | os.PathLike[str] | int | datetime | date | float
 
 
 # Python's Path implementation  is a little bit unsuaul

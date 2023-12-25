@@ -3,32 +3,53 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-import pytest
 
 from paved_path import PavedPath
-
-if TYPE_CHECKING:
-    from paved_path import PathableType
 
 
 class TestConversions:
     """Test that various types of input are correctly converted to a PavedPath."""
 
-    @pytest.mark.parametrize(
-        ("input_value", "expected_output"),
-        [
-            (datetime(2020, 1, 1).astimezone(), "1577865600.0"),
-            (date(2020, 1, 1), "2020-01-01"),
-            (123.456, "123.456"),
-            (123, "123"),
-            (Path("abc"), "abc"),
-            (PavedPath("abc"), "abc"),
-        ],
-    )
-    def test_conversion(self, input_value: PathableType, expected_output: str) -> None:
-        """Test that various types of input are correctly converted to a PavedPath."""
+    def test_conversion_datetime(self) -> None:
+        """Test that a datetime is correctly converted to a PavedPath."""
+        input_value = datetime(2020, 1, 1).astimezone()
+        expected_output = "1577865600.0"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_conversion_date(self) -> None:
+        """Test that a date is correctly converted to a PavedPath."""
+        input_value = date(2020, 1, 1)
+        expected_output = "2020-01-01"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_conversion_float(self) -> None:
+        """Test that a float is correctly converted to a PavedPath."""
+        input_value = 123.456
+        expected_output = "123.456"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_conversion_int(self) -> None:
+        """Test that an integer is correctly converted to a PavedPath."""
+        input_value = 123
+        expected_output = "123"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_conversion_path(self) -> None:
+        """Test that a Path is correctly converted to a PavedPath."""
+        input_value = Path("abc")
+        expected_output = "abc"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_conversion_pavedpath(self) -> None:
+        """Test that a PavedPath is correctly converted to a PavedPath."""
+        input_value = PavedPath("abc")
+        expected_output = "abc"
+        assert PavedPath(input_value) == PavedPath(expected_output)
+
+    def test_mixed_pavedpath(self) -> None:
+        """Test that a mixed initialization is correctly converted to a PavedPath."""
+        input_value = PavedPath("abc", 123)
+        expected_output = "abc/123/def"
         assert PavedPath(input_value) == PavedPath(expected_output)
 
 
