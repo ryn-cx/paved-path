@@ -38,13 +38,15 @@ class PavedPath(type(Path())):
     @classmethod
     def _convert_to_path(cls, value: PathableType) -> os.PathLike[str]:
         """Convert a string, bytes, os.PathLike, int, datetime, date or float to a Path object."""
-        if isinstance(value, (datetime, date, float, int, str, bytes)):
+        if isinstance(value, datetime):
             # datetime - 123.456
-            # date - 2000-01-01
-            # float - 123.456
-            # int - 123
-            # str - abc
-            # bytes - abc
+            return cls._convert_to_path(value.timestamp())
+        if isinstance(value, (datetime, date, float, int, str, bytes)):
+            # date - "2000-01-01"
+            # float - "123.456"
+            # int - "123"
+            # str - "abc"
+            # bytes - "abc"
             return Path(str(value))
 
         return value

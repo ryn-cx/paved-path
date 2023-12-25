@@ -19,7 +19,7 @@ class TestConversions:
     @pytest.mark.parametrize(
         ("input_value", "expected_output"),
         [
-            (datetime(2020, 1, 1).astimezone().timestamp(), "1577865600.0"),
+            (datetime(2020, 1, 1).astimezone(), "1577865600.0"),
             (date(2020, 1, 1), "2020-01-01"),
             (123.456, "123.456"),
             (123, "123"),
