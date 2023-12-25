@@ -49,7 +49,7 @@ class TestConversions:
     def test_mixed_pavedpath(self) -> None:
         """Test that a mixed initialization is correctly converted to a PavedPath."""
         input_value = PavedPath("abc", 123)
-        expected_output = "abc/123/def"
+        expected_output = "abc/123"
         assert PavedPath(input_value) == PavedPath(expected_output)
 
 
