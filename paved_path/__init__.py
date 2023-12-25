@@ -1,4 +1,4 @@
-"""A modified of pathlib.Path that adds extra functionality."""
+"""Library for working with files and file paths."""
 from __future__ import annotations
 
 import shutil
@@ -16,28 +16,64 @@ if TYPE_CHECKING:
 # Python's Path implementation  is a little bit unsuaul
 # Using type(Path()) is required to subclass Path but it may break in the future
 class PavedPath(type(Path())):
-    """A modified of pathlib.Path that adds extra functionality."""
+    """Library for working with files and file paths."""
 
     def __new__(cls, *args: PathableType) -> Self:
-        """Convert all arguments to Path objects and passes them to the Path constructor."""
+        """Convert all arguments to Path objects and passes them to the Path constructor.
+
+        Args:
+        ----
+            args: The arguments to be converted to Path objects.
+
+        Returns:
+        -------
+            A Path object with all arguments converted to Path objects.
+        """
         # TypeErrors occur in __new__ so values need to be cast here before __init__
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
         return super().__new__(cls, *path_fragments)
 
     # Add extra instance variables used for caching
     def __init__(self, *_args: PathableType) -> None:
-        """Initialize the path object and set the cached values to None."""
+        """Initialize the path object and set the cached values to None.
+
+        Args:
+        ----
+            _args: The value to be converted to Path objects.
+
+        Returns:
+        -------
+            A Path object with all arguments converted to Path objects.
+        """
         self.read_bytes_cached_value = None
         self.read_text_cached_value = None
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
-        """Append a value to the path and return a new path object."""
+        """Append a value to the path and return a new path object.
+
+        Args:
+        ----
+            key: The value to be appended to the path.
+
+        Returns:
+        -------
+            A new path object with the value appended to the path.
+        """
         return super().__truediv__(self._convert_to_path(key))
 
     @classmethod
     def _convert_to_path(cls, value: PathableType) -> os.PathLike[str]:
-        """Convert a string, bytes, os.PathLike, int, datetime, date or float to a Path object."""
+        """Convert a string, bytes, os.PathLike, int, datetime, date or float to a Path object.
+
+        Args:
+        ----
+            value: The value to be converted to a path.
+
+        Returns:
+        -------
+            A Path object with the value converted to a path.
+        """
         if isinstance(value, datetime):
             # datetime - 123.456
             return cls._convert_to_path(value.timestamp())
@@ -52,11 +88,25 @@ class PavedPath(type(Path())):
         return value
 
     def aware_mtime(self) -> datetime:
-        """Get the mtime of a file as a timezone aware datetime object."""
+        """Get the mtime of a file as a timezone aware datetime object.
+
+        Returns
+        -------
+            The mtime of the file as a timezone aware datetime object.
+        """
         return datetime.fromtimestamp(self.stat().st_mtime).astimezone()
 
     def up_to_date(self, timestamp: datetime | None = None) -> bool:
-        """Check if the file is up to date with respect to a given timestamp."""
+        """Check if the file is up to date with respect to a given timestamp.
+
+        Args:
+        ----
+            timestamp: The timestamp to compare the file's mtime to.
+
+        Returns:
+        -------
+            True if the file is up to date, False otherwise.
+        """
         # If file does not exist it can't be up to date
         if not self.exists():
             return False
@@ -69,11 +119,25 @@ class PavedPath(type(Path())):
         return self.aware_mtime() > timestamp.astimezone()
 
     def outdated(self, timestamp: datetime | None = None) -> bool:
-        """Check if the file is outdated with respect to a given timestamp."""
+        """Check if the file is outdated with respect to a given timestamp.
+
+        Args:
+        ----
+            timestamp: The timestamp to compare the file's mtime to.
+
+        Returns:
+        -------
+            True if the file is outdated, False otherwise.
+        """
         return not self.up_to_date(timestamp)
 
     def write(self, content: bytes | str) -> None:
-        """Write a bytes or a str object to a file, and will automatically create the directory if needed."""
+        """Write a bytes or a str object to a file, and will automatically create the directory if needed.
+
+        Args:
+        ----
+            content: The content to be written to the file.
+        """
         self.parent.mkdir(parents=True, exist_ok=True)
 
         if isinstance(content, bytes):
@@ -90,14 +154,34 @@ class PavedPath(type(Path())):
                 shutil.rmtree(self)
 
     def read_text_cached(self, encoding: None | str = None, *, reload: bool = False) -> str:
-        """Read the file text and cache the result."""
+        """Read the file text and cache the result.
+
+        Args:
+        ----
+            encoding: The encoding to use when reading the file.
+            reload: Whether to reload the file or not.
+
+        Returns:
+        -------
+            The file text.
+        """
         if not self.read_text_cached_value or reload:
             self.read_text_cached_value = self.read_text(encoding=encoding)
 
         return self.read_text_cached_value
 
     def read_bytes_cached(self, *, reload: bool = False) -> bytes:
-        """Read the file bytes and cache the result."""
+        """Read the file bytes and cache the result.
+
+        Args:
+        ----
+            encoding: The encoding to use when reading the file.
+            reload: Whether to reload the file or not.
+
+        Returns:
+        -------
+            The file bytes.
+        """
         if not self.read_bytes_cached_value or reload:
             self.read_bytes_cached_value = self.read_bytes()
 
