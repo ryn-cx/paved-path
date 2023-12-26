@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import shutil
-from abc import abstractmethod
 from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -167,7 +166,6 @@ class PavedPath(type(Path())):
         self.clear_cache()
         return super().write_bytes(data)
 
-    @abstractmethod
     def clear_cache(self) -> None:
         """Clear the cached values."""
         self.read_bytes_cached_value = None
