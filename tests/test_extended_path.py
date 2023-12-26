@@ -151,7 +151,8 @@ class TestCachedRead:
         file = self.make_initial_file()
         file.read_text_cached()
         file.write("456")
-        assert file.read_text_cached() == "123"
+        assert file.read_text_cached_value is None
+        assert file.read_text_cached() == "456"
         file.delete()
 
     def test_read_text_updating_cache(self) -> None:
@@ -173,7 +174,8 @@ class TestCachedRead:
         file = self.make_initial_file()
         file.read_bytes_cached()
         file.write("456")
-        assert file.read_bytes_cached() == b"123"
+        assert file.read_bytes_cached_value is None
+        assert file.read_bytes_cached() == b"456"
         file.delete()
 
     def test_read_bytes_updating_cache(self) -> None:

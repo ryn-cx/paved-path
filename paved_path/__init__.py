@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import shutil
+from abc import abstractmethod
 from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from typing_extensions import Buffer
 
 if TYPE_CHECKING:
     import os
@@ -47,6 +50,9 @@ class PavedPath(type(Path())):
         """
         self.read_bytes_cached_value = None
         self.read_text_cached_value = None
+        # This isn't used in this function, but it will be used in subclasses and makes clearing the cache easier if
+        # it's defined now
+        self.parsed_cached_value = None
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
@@ -132,7 +138,7 @@ class PavedPath(type(Path())):
         return not self.up_to_date(timestamp)
 
     def write(self, content: bytes | str) -> None:
-        """Write a bytes or a str object to a file, and will automatically create the directory if needed.
+        """Open the file in bytes or text mode, write to it, close the file, and clear the cache.
 
         Args:
         ----
@@ -144,6 +150,29 @@ class PavedPath(type(Path())):
             self.write_bytes(content)
         else:
             self.write_text(content, encoding="utf-8")
+
+    def write_text(
+        self,
+        data: str,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        """Open the file in text mode, write to it, close the file, and clear the cache."""
+        self.clear_cache()
+        return super().write_text(data, encoding=encoding, errors=errors, newline=newline)
+
+    def write_bytes(self, data: Buffer) -> int:
+        """Open the file in bytes mode, write to it, close the file, and clear the cache."""
+        self.clear_cache()
+        return super().write_bytes(data)
+
+    @abstractmethod
+    def clear_cache(self) -> None:
+        """Clear the cached values."""
+        self.read_bytes_cached_value = None
+        self.read_text_cached_value = None
+        self.parsed_cached_value = None
 
     def delete(self) -> None:
         """Delete a folder or a file without having to worry about which it is."""
