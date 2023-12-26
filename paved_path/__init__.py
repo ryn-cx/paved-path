@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     import os
     from typing import Self, TypeAlias
 
+    from typing_extensions import Buffer
+
     PathableType: TypeAlias = str | bytes | os.PathLike[str] | int | datetime | date | float
 
 
@@ -175,7 +177,7 @@ class PavedPath(type(Path())):
         self.clear_cache()
         return super().write_text(data, encoding=encoding, errors=errors, newline=newline)
 
-    def write_bytes(self, data: bytes) -> int:
+    def write_bytes(self, data: Buffer) -> int:
         """Open the file in bytes mode, write to it, close the file, and clear the cache."""
         self.clear_cache()
         return super().write_bytes(data)
