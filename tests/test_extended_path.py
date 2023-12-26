@@ -106,15 +106,20 @@ class TestWrite:
     def test_write_through_bytes(self) -> None:
         """Test that write_binary writes bytes to a file."""
         file = PavedPath("Temp Test Files/test_write_binary.ext")
-        file.write(b"Text", write_through=True)
+        file.write(b"Text")
         assert file.cache.read_bytes == b"Text"
+        file.write(b"Text", write_through=False)
+        assert file.cache.read_bytes is None
+
         file.parent.delete()
 
     def test_write_through_text(self) -> None:
         """Test that write_text writes a string to a file."""
         file = PavedPath("Temp Test Files/test_write_text.ext")
-        file.write("Text", write_through=True)
+        file.write("Text")
         assert file.cache.read_text == "Text"
+        file.write("Text", write_through=False)
+        assert file.cache.read_text is None
         file.parent.delete()
 
 
