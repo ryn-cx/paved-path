@@ -3,7 +3,7 @@ name = "paved-path"
 version = "0.1.0"
 description = "Library for working with files and file paths"
 authors = ["ryn-cx <84663588+ryn-cx@users.noreply.github.com>"]
-license = "GNU GPLv3"
+license = "GNU AGPLv3"
 readme = "README.md"
 
 [tool.poetry.dependencies]
