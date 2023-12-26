@@ -3,154 +3,151 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Generator
+
+import pytest
 
 from paved_path import PavedPath
+
+if TYPE_CHECKING:
+    from paved_path import PathableType
 
 
 class TestConversions:
     """Test that various types of input are correctly converted to a PavedPath."""
 
-    def test_conversion_datetime(self) -> None:
-        """Test that a datetime is correctly converted to a PavedPath."""
-        input_value = datetime(2020, 1, 1).astimezone()
-        expected_output = "1577865600.0"
+    PARAMATERS = (
+        (123, "123"),
+        (123.456, "123.456"),
+        (datetime(2020, 1, 1).astimezone(), "1577865600.0"),
+        (date(2020, 1, 1), "2020-01-01"),
+        ("abc", "abc"),
+        (Path("def"), "def"),
+        (PavedPath("hij"), "hij"),
+    )
+
+    @pytest.mark.parametrize(("input_value", "expected_output"), PARAMATERS)
+    def test_initialize_single(self, input_value: PathableType, expected_output: str) -> None:
+        """Test that a value is correctly converted to a PavedPath."""
         assert PavedPath(input_value) == PavedPath(expected_output)
 
-    def test_conversion_date(self) -> None:
-        """Test that a date is correctly converted to a PavedPath."""
-        input_value = date(2020, 1, 1)
-        expected_output = "2020-01-01"
-        assert PavedPath(input_value) == PavedPath(expected_output)
+    @pytest.mark.parametrize(("input_value", "expected_output"), PARAMATERS)
+    def test_initialize_multiple(self, input_value: PathableType, expected_output: str) -> None:
+        """Test that a value is correctly converted to a PavedPath."""
+        assert PavedPath(input_value, input_value) == PavedPath(f"{expected_output}/{expected_output}")
 
-    def test_conversion_float(self) -> None:
-        """Test that a float is correctly converted to a PavedPath."""
-        input_value = 123.456
-        expected_output = "123.456"
-        assert PavedPath(input_value) == PavedPath(expected_output)
+    @pytest.mark.parametrize(("input_value", "expected_output"), PARAMATERS)
+    def test_append(self, input_value: PathableType, expected_output: str) -> None:
+        """Test that a value is correctly converted to a PavedPath."""
+        assert PavedPath(input_value) / input_value == PavedPath(f"{expected_output}/{expected_output}")
 
-    def test_conversion_int(self) -> None:
-        """Test that an integer is correctly converted to a PavedPath."""
-        input_value = 123
-        expected_output = "123"
-        assert PavedPath(input_value) == PavedPath(expected_output)
 
-    def test_conversion_path(self) -> None:
-        """Test that a Path is correctly converted to a PavedPath."""
-        input_value = Path("abc")
-        expected_output = "abc"
-        assert PavedPath(input_value) == PavedPath(expected_output)
-
-    def test_conversion_pavedpath(self) -> None:
-        """Test that a PavedPath is correctly converted to a PavedPath."""
-        input_value = PavedPath("abc")
-        expected_output = "abc"
-        assert PavedPath(input_value) == PavedPath(expected_output)
-
-    def test_mixed_pavedpath(self) -> None:
-        """Test that a mixed initialization is correctly converted to a PavedPath."""
-        input_value = PavedPath("abc", 123)
-        expected_output = "abc/123"
-        assert PavedPath(input_value) == PavedPath(expected_output)
+@pytest.fixture()
+def temporary_file() -> Generator[PavedPath, None, None]:
+    """Get a file path for testing and delete the test_data folder if it exists after the test."""
+    temporary_file = PavedPath("test_data/file.txt")
+    yield temporary_file
+    if temporary_file.parent == PavedPath("test_data"):
+        temporary_file.parent.delete()
 
 
 class TestUpToDate:
     """Test the up_to_date method."""
 
-    def test_up_to_date_no_file(self) -> None:
-        """Test that up_to_date returns False if the file does not exist."""
-        file = PavedPath("Temp Test Files/test_up_to_date_no_file.ext")
-        timestamp = datetime.now().astimezone()
-        file.parent.delete()
-        assert not file.up_to_date(timestamp)
-
-    def test_up_to_date_no_file_or_timestamp(self) -> None:
+    def test_up_to_date_no_file_or_timestamp(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file does not exist and no timestamp is given."""
-        file = PavedPath("Temp Test Files/test_up_to_date_no_file.ext")
-        file.parent.delete()
-        assert not file.up_to_date()
+        assert not temporary_file.up_to_date()
+        assert temporary_file.outdated()
 
-    def test_up_to_date_new_file(self) -> None:
+    def test_up_to_date_no_file(self, temporary_file: PavedPath) -> None:
+        """Test that up_to_date returns False if the file does not exist."""
+        timestamp = datetime.now().astimezone()
+        assert not temporary_file.up_to_date(timestamp)
+        assert temporary_file.outdated(timestamp)
+
+    def test_up_to_date_new_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns True if the file is newer than the timestamp."""
-        file = PavedPath("Temp Test Files/test_up_to_date_new_file.ext")
         timestamp = datetime.now().astimezone()
-        file.write("Text")
-        assert file.up_to_date(timestamp)
-        file.parent.delete()
+        temporary_file.write("Text")
+        assert temporary_file.up_to_date(timestamp)
+        assert not temporary_file.outdated(timestamp)
 
-    def test_up_to_date_old_file(self) -> None:
+    def test_up_to_date_old_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file is older than the timestamp."""
-        file = PavedPath("Temp Test Files/test_up_to_date_old_file.ext")
-        file.write("Text")
+        temporary_file.write("Text")
         timestamp = datetime.now().astimezone()
-        assert not file.up_to_date(timestamp)
-        file.parent.delete()
+        assert not temporary_file.up_to_date(timestamp)
+        assert temporary_file.outdated(timestamp)
 
 
 class TestWrite:
     """Test the write method."""
 
-    def test_write_bytes(self) -> None:
-        """Test that write_binary writes bytes to a file."""
-        file = PavedPath("Temp Test Files/test_write_binary.ext")
-        file.write(b"Text")
-        assert file.read_bytes() == b"Text"
-        file.parent.delete()
-
-    def test_write_text(self) -> None:
+    def test_write_text(self, temporary_file: PavedPath) -> None:
         """Test that write_text writes a string to a file."""
-        file = PavedPath("Temp Test Files/test_write_text.ext")
-        file.write("Text")
-        assert file.read_text(encoding="utf-8") == "Text"
-        file.parent.delete()
+        # Test empty cache without write_through
+        temporary_file.write("abc", write_through=False)
+        assert temporary_file.cache.read_text is None
 
-    def test_write_through_bytes(self) -> None:
-        """Test that write_binary writes bytes to a file."""
-        file = PavedPath("Temp Test Files/test_write_binary.ext")
-        file.write(b"Text")
-        assert file.cache.read_bytes == b"Text"
-        file.write(b"Text", write_through=False)
-        assert file.cache.read_bytes is None
+        # Test empty cache with write_through
+        temporary_file.write("abc")
+        assert temporary_file.cache.read_text == "abc"
 
-        file.parent.delete()
+        # Test non-empty cache without write_through
+        temporary_file.write("def", write_through=False)
+        assert temporary_file.cache.read_text is None
 
-    def test_write_through_text(self) -> None:
-        """Test that write_text writes a string to a file."""
-        file = PavedPath("Temp Test Files/test_write_text.ext")
-        file.write("Text")
-        assert file.cache.read_text == "Text"
-        file.write("Text", write_through=False)
-        assert file.cache.read_text is None
-        file.parent.delete()
+        # Test non-empty cache with write_through
+        temporary_file.write("def")
+        assert temporary_file.cache.read_text == "def"
+
+    def test_write_bytes(self, temporary_file: PavedPath) -> None:
+        """Test that write_text writes a bytes to a file."""
+        # Test empty cache without write_through
+        temporary_file.write(b"abc", write_through=False)
+        assert temporary_file.cache.read_bytes is None
+
+        # Test empty cache with write_through
+        temporary_file.write(b"abc")
+        assert temporary_file.cache.read_bytes == b"abc"
+
+        # Test non-empty cache without write_through
+        temporary_file.write(b"def", write_through=False)
+        assert temporary_file.cache.read_bytes is None
+
+        # Test non-empty cache with write_through
+        temporary_file.write(b"def")
+        assert temporary_file.cache.read_bytes == b"def"
 
 
 class TestDelete:
     """Test the delete method."""
 
-    def delete_file(self) -> None:
-        """Test that delete deletes a file."""
-        file = PavedPath("Temp Test Files/test_delete_file.ext")
-        file.write("Text")
+    @pytest.fixture()
+    def file_to_delete(self) -> Generator[PavedPath, None, None]:
+        """Get a file path for testing and delete it if it exists after the test."""
+        file = PavedPath("test_data/file")
+        yield file
         file.delete()
-        assert file.exists()
+        assert not file.exists()
 
-    def delete_empty_folder(self) -> None:
+    def test_delete_file_that_does_not_exist(self, file_to_delete: PavedPath) -> None:
+        """Test that delete does not raise an error when deleting a file that does not exist."""
+
+    def test_delete_file(self, file_to_delete: PavedPath) -> None:
+        """Test that delete deletes a file."""
+        file_to_delete.write("Text")
+
+    def test_delete_empty_folder(self, file_to_delete: PavedPath) -> None:
         """Test that delete deletes an empty folder."""
-        folder = PavedPath("Temp Test Files/test_delete_empty_folder")
-        folder.mkdir()
-        folder.delete()
-        assert folder.exists()
+        file_to_delete.mkdir()
 
-    def delete_non_empty_folder(self) -> None:
+    def test_delete_non_empty_folder(self, file_to_delete: PavedPath) -> None:
         """Test that delete deletes a non-empty folder."""
-        folder = PavedPath("Temp Test Files/test_delete_non_empty_folder")
-        folder.mkdir()
-        file = folder / "test_delete_non_empty_folder.ext"
-        file.write("Text")
-        folder.delete()
-        assert folder.exists()
+        (file_to_delete / "subfile").write("Text")
 
 
-class TestCachedRead:
+class TestRead:
     """Test the cached read methods."""
 
     def make_initial_file(self) -> PavedPath:
@@ -159,48 +156,16 @@ class TestCachedRead:
         file.write("123")
         return file
 
-    def test_read_text(self) -> None:
+    def test_read_text(self, temporary_file: PavedPath) -> None:
         """Test that read_text reads a file."""
-        file = self.make_initial_file()
-        assert file.read_text_cached() == "123"
-        file.delete()
+        # Test reading text
+        temporary_file.write("123")
+        new_file = PavedPath(temporary_file)
+        assert new_file.read_text_cached(reload=True) == "123"
+        assert new_file.cache.read_text == "123"
 
-    def test_read_text_changed_file(self) -> None:
-        """Test that read_text caches the initial content and does not update it when the file changes."""
-        file = self.make_initial_file()
-        file.read_text_cached()
-        file.write("456")
-        assert file.read_text_cached_value is None
-        assert file.read_text_cached() == "456"
-        file.delete()
-
-    def test_read_text_updating_cache(self) -> None:
-        """Test that force_read_text_cached updates the cache."""
-        file = self.make_initial_file()
-        file.read_text_cached()
-        file.write("456")
-        assert file.read_text_cached(reload=True) == "456"
-        file.delete()
-
-    def test_read_bytes(self) -> None:
-        """Test that read_bytes reads a file."""
-        file = self.make_initial_file()
-        assert file.read_bytes_cached() == b"123"
-        file.delete()
-
-    def test_read_bytes_changed_file(self) -> None:
-        """Test that read_bytes caches the initial content and does not update it when the file changes."""
-        file = self.make_initial_file()
-        file.read_bytes_cached()
-        file.write("456")
-        assert file.read_bytes_cached_value is None
-        assert file.read_bytes_cached() == b"456"
-        file.delete()
-
-    def test_read_bytes_updating_cache(self) -> None:
-        """Test that force_read_bytes_cached updates the cache."""
-        file = self.make_initial_file()
-        file.read_bytes_cached()
-        file.write("456")
-        assert file.read_bytes_cached(reload=True) == b"456"
-        file.delete()
+        # Test reading byte
+        temporary_file.write(b"123")
+        new_file = PavedPath(temporary_file)
+        assert new_file.read_bytes_cached(reload=True) == b"123"
+        assert new_file.cache.read_bytes == b"123"

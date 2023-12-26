@@ -6,8 +6,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from typing_extensions import Buffer
-
 if TYPE_CHECKING:
     import os
     from typing import Self, TypeAlias
@@ -73,7 +71,10 @@ class PavedPath(type(Path())):
         -------
             A new path object with the value appended to the path.
         """
-        return super().__truediv__(self._convert_to_path(key))
+        new_path = super().__truediv__(self._convert_to_path(key))
+        # When creating a new path with / no cache is made, so create a blank one
+        new_path.cache = CobblestoneCache()
+        return new_path
 
     @classmethod
     def _convert_to_path(cls, value: PathableType) -> os.PathLike[str]:
@@ -174,19 +175,15 @@ class PavedPath(type(Path())):
         self.clear_cache()
         return super().write_text(data, encoding=encoding, errors=errors, newline=newline)
 
-    def write_bytes(self, data: Buffer) -> int:
+    def write_bytes(self, data: bytes) -> int:
         """Open the file in bytes mode, write to it, close the file, and clear the cache."""
         self.clear_cache()
         return super().write_bytes(data)
 
     def clear_cache(self) -> None:
         """Clear the cached values."""
-        # Repalce self.cache with a new instance of the same object dynamically
+        # Replace self.cache with a new instance of the same object dynamically
         self.cache = type(self.cache)()
-
-        self.read_bytes_cached_value = None
-        self.read_text_cached_value = None
-        self.parsed_cached_value = None
 
     def delete(self) -> None:
         """Delete a folder or a file without having to worry about which it is."""
