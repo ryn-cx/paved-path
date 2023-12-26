@@ -89,7 +89,7 @@ class TestUpToDate:
 class TestWrite:
     """Test the write method."""
 
-    def test_write_binary(self) -> None:
+    def test_write_bytes(self) -> None:
         """Test that write_binary writes bytes to a file."""
         file = PavedPath("Temp Test Files/test_write_binary.ext")
         file.write(b"Text")
@@ -101,6 +101,20 @@ class TestWrite:
         file = PavedPath("Temp Test Files/test_write_text.ext")
         file.write("Text")
         assert file.read_text(encoding="utf-8") == "Text"
+        file.parent.delete()
+
+    def test_write_through_bytes(self) -> None:
+        """Test that write_binary writes bytes to a file."""
+        file = PavedPath("Temp Test Files/test_write_binary.ext")
+        file.write(b"Text", write_through=True)
+        assert file.cache.read_bytes == b"Text"
+        file.parent.delete()
+
+    def test_write_through_text(self) -> None:
+        """Test that write_text writes a string to a file."""
+        file = PavedPath("Temp Test Files/test_write_text.ext")
+        file.write("Text", write_through=True)
+        assert file.cache.read_text == "Text"
         file.parent.delete()
 
 

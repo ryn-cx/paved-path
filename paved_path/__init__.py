@@ -15,6 +15,18 @@ if TYPE_CHECKING:
     PathableType: TypeAlias = str | bytes | os.PathLike[str] | int | datetime | date | float
 
 
+class CobblestoneCache:
+    """Cache for PavedPath.
+
+    This is set up as a seperate class to make it easier to clear the cache.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the cache with None values."""
+        self.read_text: str | None = None
+        self.read_bytes: bytes | None = None
+
+
 # Python's Path implementation  is a little bit unsuaul
 # Using type(Path()) is required to subclass Path but it may break in the future
 class PavedPath(type(Path())):
@@ -47,11 +59,7 @@ class PavedPath(type(Path())):
         -------
             A Path object with all arguments converted to Path objects.
         """
-        self.read_bytes_cached_value = None
-        self.read_text_cached_value = None
-        # This isn't used in this function, but it will be used in subclasses and makes clearing the cache easier if
-        # it's defined now
-        self.parsed_cached_value = None
+        self.cache = CobblestoneCache()
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
@@ -136,19 +144,24 @@ class PavedPath(type(Path())):
         """
         return not self.up_to_date(timestamp)
 
-    def write(self, content: bytes | str) -> None:
+    def write(self, content: bytes | str, *, write_through: bool = True) -> None:
         """Open the file in bytes or text mode, write to it, close the file, and clear the cache.
 
         Args:
         ----
             content: The content to be written to the file.
+            write_through: Whether to write the content to the cache or not.
         """
         self.parent.mkdir(parents=True, exist_ok=True)
 
         if isinstance(content, bytes):
             self.write_bytes(content)
+            if write_through:
+                self.cache.read_bytes = content
         else:
             self.write_text(content, encoding="utf-8")
+            if write_through:
+                self.cache.read_text = content
 
     def write_text(
         self,
@@ -168,6 +181,9 @@ class PavedPath(type(Path())):
 
     def clear_cache(self) -> None:
         """Clear the cached values."""
+        # Repalce self.cache with a new instance of the same object dynamically
+        self.cache = type(self.cache)()
+
         self.read_bytes_cached_value = None
         self.read_text_cached_value = None
         self.parsed_cached_value = None
@@ -192,10 +208,10 @@ class PavedPath(type(Path())):
         -------
             The file text.
         """
-        if not self.read_text_cached_value or reload:
-            self.read_text_cached_value = self.read_text(encoding=encoding)
+        if not self.cache.read_text or reload:
+            self.cache.read_text = self.read_text(encoding=encoding)
 
-        return self.read_text_cached_value
+        return self.cache.read_text
 
     def read_bytes_cached(self, *, reload: bool = False) -> bytes:
         """Read the file bytes and cache the result.
@@ -209,7 +225,7 @@ class PavedPath(type(Path())):
         -------
             The file bytes.
         """
-        if not self.read_bytes_cached_value or reload:
-            self.read_bytes_cached_value = self.read_bytes()
+        if not self.cache.read_bytes or reload:
+            self.cache.read_bytes = self.read_bytes()
 
-        return self.read_bytes_cached_value
+        return self.cache.read_bytes
