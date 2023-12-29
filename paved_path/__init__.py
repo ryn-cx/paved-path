@@ -40,6 +40,11 @@ class PavedPath(type(Path())):
             cls.cache = CobblestoneCache()
         return super().__new__(cls, *path_fragments)
 
+    # This function exists just for type hinting purposes
+    def __init__(self, *_args: PathableType) -> None:
+        """Initialize the object and set up the cache."""
+        super().__init__()
+
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
         """Append a value to the path and return a new path object."""
