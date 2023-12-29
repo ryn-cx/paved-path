@@ -80,44 +80,80 @@ class TestUpToDate:
         assert temporary_file.outdated(timestamp)
 
 
+class TestRead:
+    """Test the cached read methods."""
+
+    def test_read_text(self, temporary_file: PavedPath) -> None:
+        """Test that read_text reads a file."""
+        # Test reading text
+        temporary_file.write("123")
+        new_file = PavedPath(temporary_file)
+        assert new_file.read_text_cached(reload=True) == "123"
+        assert new_file.cache.read_text == "123"
+
+        # Test reading byte
+        temporary_file.write(b"123")
+        new_file = PavedPath(temporary_file)
+        assert new_file.read_bytes_cached(reload=True) == b"123"
+        assert new_file.cache.read_bytes == b"123"
+
+
 class TestWrite:
     """Test the write method."""
 
-    def test_write_text(self, temporary_file: PavedPath) -> None:
+    # There once was a funny issue where cache was initialized differently between an instance that was created through
+    # PavedPath() and an instance that created through PavedPath() / PavedPath(). Just in case test all of these tests
+    # using both methods of initialization.
+    DOUBLE_FILES = (PavedPath("test_data/file.txt"), PavedPath("test_data") / "file.txt")
+
+    @pytest.fixture()
+    def temporary_file_for_writing(self, temporary_file: PavedPath) -> Generator[PavedPath, None, None]:
+        """Get a file path for testing and delete the test_data folder if it exists after the test."""
+        yield temporary_file
+        if temporary_file.parent == PavedPath("test_data"):
+            temporary_file.parent.delete()
+
+    @pytest.mark.parametrize(("temporary_file_for_writing"), DOUBLE_FILES, indirect=True)
+    def test_write_text(self, temporary_file_for_writing: PavedPath) -> None:
         """Test that write_text writes a string to a file."""
         # Test empty cache without write_through
-        temporary_file.write("abc", write_through=False)
-        assert temporary_file.cache.read_text is None
+        file_path = temporary_file_for_writing
+
+        file_path.write("abc", write_through=False)
+        assert file_path.cache.read_text is None
 
         # Test empty cache with write_through
-        temporary_file.write("abc")
-        assert temporary_file.cache.read_text == "abc"
+        file_path.write("abc")
+        assert file_path.cache.read_text == "abc"
 
         # Test non-empty cache without write_through
-        temporary_file.write("def", write_through=False)
-        assert temporary_file.cache.read_text is None
+        file_path.write("def", write_through=False)
+        assert file_path.cache.read_text is None
 
         # Test non-empty cache with write_through
-        temporary_file.write("def")
-        assert temporary_file.cache.read_text == "def"
+        file_path.write("def")
+        assert file_path.cache.read_text == "def"
 
-    def test_write_bytes(self, temporary_file: PavedPath) -> None:
+    @pytest.mark.parametrize(("temporary_file_for_writing"), DOUBLE_FILES, indirect=True)
+    def test_write_bytes(self, temporary_file_for_writing: PavedPath) -> None:
         """Test that write_text writes a bytes to a file."""
+        file_path = temporary_file_for_writing
+
         # Test empty cache without write_through
-        temporary_file.write(b"abc", write_through=False)
-        assert temporary_file.cache.read_bytes is None
+        file_path.write(b"abc", write_through=False)
+        assert file_path.cache.read_bytes is None
 
         # Test empty cache with write_through
-        temporary_file.write(b"abc")
-        assert temporary_file.cache.read_bytes == b"abc"
+        file_path.write(b"abc")
+        assert file_path.cache.read_bytes == b"abc"
 
         # Test non-empty cache without write_through
-        temporary_file.write(b"def", write_through=False)
-        assert temporary_file.cache.read_bytes is None
+        file_path.write(b"def", write_through=False)
+        assert file_path.cache.read_bytes is None
 
         # Test non-empty cache with write_through
-        temporary_file.write(b"def")
-        assert temporary_file.cache.read_bytes == b"def"
+        file_path.write(b"def")
+        assert file_path.cache.read_bytes == b"def"
 
 
 class TestDelete:
@@ -145,27 +181,3 @@ class TestDelete:
     def test_delete_non_empty_folder(self, file_to_delete: PavedPath) -> None:
         """Test that delete deletes a non-empty folder."""
         (file_to_delete / "subfile").write("Text")
-
-
-class TestRead:
-    """Test the cached read methods."""
-
-    def make_initial_file(self) -> PavedPath:
-        """Create a file with initial content."""
-        file = PavedPath("tests/test_cached_read.txt")
-        file.write("123")
-        return file
-
-    def test_read_text(self, temporary_file: PavedPath) -> None:
-        """Test that read_text reads a file."""
-        # Test reading text
-        temporary_file.write("123")
-        new_file = PavedPath(temporary_file)
-        assert new_file.read_text_cached(reload=True) == "123"
-        assert new_file.cache.read_text == "123"
-
-        # Test reading byte
-        temporary_file.write(b"123")
-        new_file = PavedPath(temporary_file)
-        assert new_file.read_bytes_cached(reload=True) == b"123"
-        assert new_file.cache.read_bytes == b"123"
