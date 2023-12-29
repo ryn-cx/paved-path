@@ -34,7 +34,10 @@ class PavedPath(type(Path())):
         """Convert all arguments to Path objects and passes them to the Path constructor."""
         # TypeErrors occur in __new__ so values need to be cast here before __init__
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
-        cls.cache = CobblestoneCache()
+        # This check allows subclasses to initialize a cache of a different object before or after super().__new__ is
+        # called making it less likely to accidently have the wrong type of cache object.
+        if not hasattr(cls, "cache"):
+            cls.cache = CobblestoneCache()
         return super().__new__(cls, *path_fragments)
 
     # When values are appended to a path the new path should be validated
