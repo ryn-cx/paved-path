@@ -15,11 +15,9 @@ if TYPE_CHECKING:
     PathableType: TypeAlias = str | bytes | os.PathLike[str] | int | datetime | date | float
 
 
+# This is set up as a seperate class to make it easier to clear the cache.
 class CobblestoneCache:
-    """Cache for PavedPath.
-
-    This is set up as a seperate class to make it easier to clear the cache.
-    """
+    """Cache for PavedPath."""
 
     def __init__(self) -> None:
         """Initialize the cache with None values."""
@@ -33,63 +31,20 @@ class PavedPath(type(Path())):
     """Library for working with files and file paths."""
 
     def __new__(cls, *args: PathableType) -> Self:
-        """Convert all arguments to Path objects and passes them to the Path constructor.
-
-        Args:
-        ----
-            args: The arguments to be converted to Path objects.
-
-        Returns:
-        -------
-            A Path object with all arguments converted to Path objects.
-        """
+        """Convert all arguments to Path objects and passes them to the Path constructor."""
         # TypeErrors occur in __new__ so values need to be cast here before __init__
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
+        cls.cache = CobblestoneCache()
         return super().__new__(cls, *path_fragments)
-
-    # Add extra instance variables used for caching
-    def __init__(self, *_args: PathableType) -> None:
-        """Initialize the path object and set the cached values to None.
-
-        Args:
-        ----
-            _args: The value to be converted to Path objects.
-
-        Returns:
-        -------
-            A Path object with all arguments converted to Path objects.
-        """
-        self.cache = CobblestoneCache()
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
-        """Append a value to the path and return a new path object.
-
-        Args:
-        ----
-            key: The value to be appended to the path.
-
-        Returns:
-        -------
-            A new path object with the value appended to the path.
-        """
-        new_path = super().__truediv__(self._convert_to_path(key))
-        # When creating a new path with / no cache is made, so create a blank one
-        new_path.cache = CobblestoneCache()
-        return new_path
+        """Append a value to the path and return a new path object."""
+        return super().__truediv__(self._convert_to_path(key))
 
     @classmethod
     def _convert_to_path(cls, value: PathableType) -> os.PathLike[str]:
-        """Convert a string, bytes, os.PathLike, int, datetime, date or float to a Path object.
-
-        Args:
-        ----
-            value: The value to be converted to a path.
-
-        Returns:
-        -------
-            A Path object with the value converted to a path.
-        """
+        """Convert a string, bytes, os.PathLike, int, datetime, date or float to a Path object."""
         if isinstance(value, datetime):
             # datetime - 123.456
             return cls._convert_to_path(value.timestamp())
@@ -104,12 +59,7 @@ class PavedPath(type(Path())):
         return value
 
     def aware_mtime(self) -> datetime:
-        """Get the mtime of a file as a timezone aware datetime object.
-
-        Returns
-        -------
-            The mtime of the file as a timezone aware datetime object.
-        """
+        """Get the mtime of a file as a timezone aware datetime object."""
         return datetime.fromtimestamp(self.stat().st_mtime).astimezone()
 
     def up_to_date(self, timestamp: datetime | None = None) -> bool:
@@ -117,11 +67,8 @@ class PavedPath(type(Path())):
 
         Args:
         ----
-            timestamp: The timestamp to compare the file's mtime to.
-
-        Returns:
-        -------
-            True if the file is up to date, False otherwise.
+            timestamp: The timestamp to compare the file's modified timestamp to, if no timestamp is given just check if
+            the file exists.
         """
         # If file does not exist it can't be up to date
         if not self.exists():
@@ -139,11 +86,8 @@ class PavedPath(type(Path())):
 
         Args:
         ----
-            timestamp: The timestamp to compare the file's mtime to.
-
-        Returns:
-        -------
-            True if the file is outdated, False otherwise.
+            timestamp: The timestamp to compare the file's modified timestamp to, if no timestamp is given just check if
+            the file exists.
         """
         return not self.up_to_date(timestamp)
 
@@ -152,8 +96,10 @@ class PavedPath(type(Path())):
 
         Args:
         ----
-            content: The content to be written to the file.
-            write_through: Whether to write the content to the cache or not.
+            content: The object to be written to the file.
+            write_through: If True the cache will be updated to match what is written to the file. If False the cache
+            will be cleared. Either way the cache is not allowed to be out of sync with the file, either it matches the
+            file or it is None.
         """
         self.parent.mkdir(parents=True, exist_ok=True)
 
@@ -201,11 +147,13 @@ class PavedPath(type(Path())):
         Args:
         ----
             encoding: The encoding to use when reading the file.
-            reload: Whether to reload the file or not.
+            reload: If true read the text from the file, and cache the string even if a value is already cached. If
+            False use the cached string if it exists otherwise read the text from the file and cache the result.
+
 
         Returns:
         -------
-            The file text.
+            A cached string object.
         """
         if not self.cache.read_text or reload:
             self.cache.read_text = self.read_text(encoding=encoding)
@@ -218,11 +166,13 @@ class PavedPath(type(Path())):
         Args:
         ----
             encoding: The encoding to use when reading the file.
-            reload: Whether to reload the file or not.
+            reload: If true read the bytes from the file, and cache the bytes even if a value is already cached. If
+            False use the cached bytes if it exists otherwise read the bytes from the file and cache the result.
+
 
         Returns:
         -------
-            The file bytes.
+            A cached bytes object.
         """
         if not self.cache.read_bytes or reload:
             self.cache.read_bytes = self.read_bytes()
