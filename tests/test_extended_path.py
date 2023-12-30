@@ -56,28 +56,28 @@ class TestUpToDate:
 
     def test_up_to_date_no_file_or_timestamp(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file does not exist and no timestamp is given."""
-        assert not temporary_file.up_to_date()
-        assert temporary_file.outdated()
+        assert not temporary_file.is_up_to_date()
+        assert temporary_file.is_outdated()
 
     def test_up_to_date_no_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file does not exist."""
         timestamp = datetime.now().astimezone()
-        assert not temporary_file.up_to_date(timestamp)
-        assert temporary_file.outdated(timestamp)
+        assert not temporary_file.is_up_to_date(timestamp)
+        assert temporary_file.is_outdated(timestamp)
 
     def test_up_to_date_new_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns True if the file is newer than the timestamp."""
         timestamp = datetime.now().astimezone()
         temporary_file.write("Text")
-        assert temporary_file.up_to_date(timestamp)
-        assert not temporary_file.outdated(timestamp)
+        assert temporary_file.is_up_to_date(timestamp)
+        assert not temporary_file.is_outdated(timestamp)
 
     def test_up_to_date_old_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file is older than the timestamp."""
         temporary_file.write("Text")
         timestamp = datetime.now().astimezone()
-        assert not temporary_file.up_to_date(timestamp)
-        assert temporary_file.outdated(timestamp)
+        assert not temporary_file.is_up_to_date(timestamp)
+        assert temporary_file.is_outdated(timestamp)
 
 
 class TestRead:

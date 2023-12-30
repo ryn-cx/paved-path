@@ -70,7 +70,7 @@ class PavedPath(type(Path())):
         """Get the mtime of a file as a timezone aware datetime object."""
         return datetime.fromtimestamp(self.stat().st_mtime).astimezone()
 
-    def up_to_date(self, timestamp: datetime | None = None) -> bool:
+    def is_up_to_date(self, timestamp: datetime | None = None) -> bool:
         """Check if the file is up to date with respect to a given timestamp.
 
         Args:
@@ -89,7 +89,7 @@ class PavedPath(type(Path())):
         # When there is a file and a timestamp make the timestamp timezone aware and compare it to the file's mtime
         return self.aware_mtime() > timestamp.astimezone()
 
-    def outdated(self, timestamp: datetime | None = None) -> bool:
+    def is_outdated(self, timestamp: datetime | None = None) -> bool:
         """Check if the file is outdated with respect to a given timestamp.
 
         Args:
@@ -97,7 +97,7 @@ class PavedPath(type(Path())):
             timestamp: The timestamp to compare the file's modified timestamp to, if no timestamp is given just check if
             the file exists.
         """
-        return not self.up_to_date(timestamp)
+        return not self.is_up_to_date(timestamp)
 
     def write(self, content: bytes | str, *, write_through: bool = True) -> None:
         """Open the file in bytes or text mode, write to it, close the file, and clear the cache.
