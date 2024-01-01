@@ -127,12 +127,12 @@ class PavedPath(type(Path())):
         errors: str | None = None,
         newline: str | None = None,
     ) -> int:
-        """Open the file in text mode, write to it, close the file, and clear the cache."""
+        """Clear the cache, open the file in text mode, write to it, and close the file."""
         self.clear_cache()
         return super().write_text(data, encoding=encoding, errors=errors, newline=newline)
 
     def write_bytes(self, data: Buffer) -> int:
-        """Open the file in bytes mode, write to it, close the file, and clear the cache."""
+        """Clear the cache, open the file in bytes mode, write to it, and close the file."""
         self.clear_cache()
         return super().write_bytes(data)
 
