@@ -33,7 +33,7 @@ class CobblestoneCache:
 class PavedPath(type(Path())):
     """Library for working with files and file paths."""
 
-    cache_class = CobblestoneCache
+    cache = CobblestoneCache()
 
     def __new__(cls, *args: PathableType, title: str | None = None) -> Self:
         """Convert all arguments to Path objects and passes them to the Path constructor."""
@@ -48,7 +48,7 @@ class PavedPath(type(Path())):
     def __init__(self, *_args: PathableType, title: str | None = None) -> None:
         """Initialize the object and set up the cache."""
         super().__init__()
-        self.cache = self.cache_class()
+        self.cache = type(self.cache)()
         self._title = title
 
     @property
@@ -162,7 +162,7 @@ class PavedPath(type(Path())):
     def clear_cache(self) -> None:
         """Clear the cached values."""
         # Replace self.cache with a new instance of the same object dynamically
-        self.cache = self.cache_class()
+        self.cache = type(self.cache)()
 
     def delete(self) -> None:
         """Delete a folder or a file without having to worry about which it is."""
