@@ -1,6 +1,7 @@
 """Test the PavedPath class."""
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Generator
@@ -46,6 +47,8 @@ class TestConversions:
 def temporary_file() -> Generator[PavedPath, None, None]:
     """Get a file path for testing and delete the test_data folder if it exists after the test."""
     temporary_file = PavedPath("test_data/file.txt")
+    if temporary_file.exists():
+        temporary_file.delete()
     yield temporary_file
     if temporary_file.parent == PavedPath("test_data"):
         temporary_file.parent.delete()
@@ -54,30 +57,73 @@ def temporary_file() -> Generator[PavedPath, None, None]:
 class TestUpToDate:
     """Test the up_to_date method."""
 
-    def test_up_to_date_no_file_or_timestamp(self, temporary_file: PavedPath) -> None:
+    def test_up_to_date_no_file_or_timestamp(self, temporary_file: PavedPath, caplog: pytest.LogCaptureFixture) -> None:
         """Test that up_to_date returns False if the file does not exist and no timestamp is given."""
-        assert not temporary_file.is_up_to_date()
-        assert temporary_file.is_outdated()
+        with caplog.at_level(logging.INFO):
+            assert not temporary_file.is_up_to_date()
+            assert "missing_file" in caplog.text
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_outdated()
+            assert "missing_file" in caplog.text
 
-    def test_up_to_date_no_file(self, temporary_file: PavedPath) -> None:
+    def test_up_to_date_no_timestamp(self, temporary_file: PavedPath, caplog: pytest.LogCaptureFixture) -> None:
+        """Test that up_to_date returns True if the file exists and not timestamp is given."""
+        temporary_file.write("Text")
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_up_to_date()
+            assert "up_to_date_file" in caplog.text
+        with caplog.at_level(logging.INFO):
+            assert not temporary_file.is_outdated()
+            assert "up_to_date_file" in caplog.text
+
+    def test_up_to_date_no_file(self, temporary_file: PavedPath, caplog: pytest.LogCaptureFixture) -> None:
         """Test that up_to_date returns False if the file does not exist."""
         timestamp = datetime.now().astimezone()
-        assert not temporary_file.is_up_to_date(timestamp)
-        assert temporary_file.is_outdated(timestamp)
+        with caplog.at_level(logging.INFO):
+            assert not temporary_file.is_up_to_date(timestamp)
+            assert "missing_file" in caplog.text
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_outdated(timestamp)
+            assert "missing_file" in caplog.text
 
-    def test_up_to_date_new_file(self, temporary_file: PavedPath) -> None:
+    def test_up_to_date_new_file(self, temporary_file: PavedPath, caplog: pytest.LogCaptureFixture) -> None:
         """Test that up_to_date returns True if the file is newer than the timestamp."""
         timestamp = datetime.now().astimezone()
         temporary_file.write("Text")
-        assert temporary_file.is_up_to_date(timestamp)
-        assert not temporary_file.is_outdated(timestamp)
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_up_to_date(timestamp)
+            assert "up_to_date_file" in caplog.text
+        with caplog.at_level(logging.INFO):
+            assert not temporary_file.is_outdated(timestamp)
+            assert "up_to_date_file" in caplog.text
 
-    def test_up_to_date_old_file(self, temporary_file: PavedPath) -> None:
+    def test_up_to_date_old_file(self, temporary_file: PavedPath, caplog: pytest.LogCaptureFixture) -> None:
         """Test that up_to_date returns False if the file is older than the timestamp."""
         temporary_file.write("Text")
         timestamp = datetime.now().astimezone()
-        assert not temporary_file.is_up_to_date(timestamp)
-        assert temporary_file.is_outdated(timestamp)
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_outdated(timestamp)
+            assert "outdated_file" in caplog.text
+        with caplog.at_level(logging.INFO):
+            assert temporary_file.is_outdated(timestamp)
+            assert "outdated_file" in caplog.text
+
+
+class TestTitle:
+    """Test the title property."""
+
+    def test_title(self, temporary_file: PavedPath) -> None:
+        """Test that the title is correct."""
+        # Automatically set title
+        assert temporary_file.title == "file.txt"
+
+        # Manually set after initialization
+        temporary_file.title = "Fancy Title"
+        assert temporary_file.title == "Fancy Title"
+
+        # Manually set on initialization
+        temporary_file = PavedPath("test_data/file.txt", title="Fancy Title")
+        assert temporary_file.title == "Fancy Title"
 
 
 class TestRead:

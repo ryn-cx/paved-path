@@ -1,6 +1,7 @@
 """Library for working with files and file paths."""
 from __future__ import annotations
 
+import logging
 import shutil
 from datetime import date, datetime
 from pathlib import Path
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from typing_extensions import Buffer
 
     PathableType: TypeAlias = str | bytes | os.PathLike[str] | int | datetime | date | float
+
+logger = logging.getLogger(__name__)
 
 
 # This is set up as a seperate class to make it easier to clear the cache.
@@ -30,7 +33,7 @@ class CobblestoneCache:
 class PavedPath(type(Path())):
     """Library for working with files and file paths."""
 
-    def __new__(cls, *args: PathableType) -> Self:
+    def __new__(cls, *args: PathableType, title: str | None = None) -> Self:
         """Convert all arguments to Path objects and passes them to the Path constructor."""
         # TypeErrors occur in __new__ so values need to be cast here before __init__
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
@@ -38,12 +41,22 @@ class PavedPath(type(Path())):
         # called making it less likely to accidently have the wrong type of cache object.
         if not hasattr(cls, "cache"):
             cls.cache = CobblestoneCache()
-        return super().__new__(cls, *path_fragments)
+        return super().__new__(cls, *path_fragments, title=title)
 
     # This function exists just for type hinting purposes
-    def __init__(self, *_args: PathableType) -> None:
+    def __init__(self, *_args: PathableType, title: str | None = None) -> None:
         """Initialize the object and set up the cache."""
         super().__init__()
+        self._title = title
+
+    @property
+    def title(self) -> str:
+        """The title of the file that has no relationship to it's actual path. Useful for logging."""
+        return self._title or self.name
+
+    @title.setter
+    def title(self, title: str) -> None:
+        self._title = title
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
@@ -80,14 +93,22 @@ class PavedPath(type(Path())):
         """
         # If file does not exist it can't be up to date
         if not self.exists():
+            logger.getChild("missing_file").info(self.title)
             return False
 
         # If no timestamp is given and the file exists it is up to date
         if timestamp is None:
+            logger.getChild("up_to_date_file").info(self.title)
             return True
 
-        # When there is a file and a timestamp make the timestamp timezone aware and compare it to the file's mtime
-        return self.aware_mtime() > timestamp.astimezone()
+        # When there is a file and a timestamp compare them
+        if self.aware_mtime() < timestamp.astimezone():
+            logger.getChild("outdated_file").info(self.title)
+            return False
+
+        # All checks passed, file is up to date
+        logger.getChild("up_to_date_file").info(self.title)
+        return True
 
     def is_outdated(self, timestamp: datetime | None = None) -> bool:
         """Check if the file is outdated with respect to a given timestamp.
@@ -127,12 +148,12 @@ class PavedPath(type(Path())):
         errors: str | None = None,
         newline: str | None = None,
     ) -> int:
-        """Clear the cache, open the file in text mode, write to it, and close the file."""
+        """Open the file in text mode, write to it, close the file, and clear the cache."""
         self.clear_cache()
         return super().write_text(data, encoding=encoding, errors=errors, newline=newline)
 
     def write_bytes(self, data: Buffer) -> int:
-        """Clear the cache, open the file in bytes mode, write to it, and close the file."""
+        """Open the file in bytes mode, write to it, close the file, and clear the cache."""
         self.clear_cache()
         return super().write_bytes(data)
 
