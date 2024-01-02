@@ -33,20 +33,22 @@ class CobblestoneCache:
 class PavedPath(type(Path())):
     """Library for working with files and file paths."""
 
+    cache_class = CobblestoneCache
+
     def __new__(cls, *args: PathableType, title: str | None = None) -> Self:
         """Convert all arguments to Path objects and passes them to the Path constructor."""
         # TypeErrors occur in __new__ so values need to be cast here before __init__
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
         # This check allows subclasses to initialize a cache of a different object before or after super().__new__ is
         # called making it less likely to accidently have the wrong type of cache object.
-        if not hasattr(cls, "cache"):
-            cls.cache = CobblestoneCache()
+
         return super().__new__(cls, *path_fragments, title=title)
 
     # This function exists just for type hinting purposes
     def __init__(self, *_args: PathableType, title: str | None = None) -> None:
         """Initialize the object and set up the cache."""
         super().__init__()
+        self.cache = self.cache_class()
         self._title = title
 
     @property
@@ -160,7 +162,7 @@ class PavedPath(type(Path())):
     def clear_cache(self) -> None:
         """Clear the cached values."""
         # Replace self.cache with a new instance of the same object dynamically
-        self.cache = type(self.cache)()
+        self.cache = self.cache_class()
 
     def delete(self) -> None:
         """Delete a folder or a file without having to worry about which it is."""
