@@ -41,7 +41,6 @@ class PavedPath(type(Path())):
         path_fragments = [cls._convert_to_path(partial_path) for partial_path in args]
         # This check allows subclasses to initialize a cache of a different object before or after super().__new__ is
         # called making it less likely to accidently have the wrong type of cache object.
-
         return super().__new__(cls, *path_fragments, title=title)
 
     # This function exists just for type hinting purposes
@@ -49,12 +48,16 @@ class PavedPath(type(Path())):
         """Initialize the object and set up the cache."""
         super().__init__()
         self.cache = type(self.cache)()
-        self._title = title
+        if title:
+            self._title = title
 
     @property
     def title(self) -> str:
         """The title of the file that has no relationship to it's actual path. Useful for logging."""
-        return self._title or self.name
+        if hasattr(self, "_title"):
+            return self._title
+
+        return self.name
 
     @title.setter
     def title(self, title: str) -> None:
