@@ -45,6 +45,7 @@ class PavedPath(type(Path())):
         """Initialize the object and set up the cache."""
         super().__init__()
         self.cache = type(self.cache)()
+        self.file_status = "Unknown"
 
     # When values are appended to a path the new path should be validated
     def __truediv__(self, key: PathableType) -> Self:
@@ -81,17 +82,21 @@ class PavedPath(type(Path())):
         """
         # If file does not exist it can't be up to date
         if not self.exists():
+            self.file_status = "Missing"
             return False
 
         # If no timestamp is given and the file exists it is up to date
         if timestamp is None:
+            self.file_status = "Exists"
             return True
 
         # When there is a file and a timestamp compare them
         if self.aware_mtime() < timestamp.astimezone():
+            self.file_status = "Outdated"
             return False
 
         # All checks passed, file is up to date
+        self.file_status = "Up to date"
         return True
 
     def is_outdated(self, timestamp: datetime | None = None) -> bool:

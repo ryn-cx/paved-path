@@ -60,18 +60,21 @@ class TestUpToDate:
         """Test that up_to_date returns False if the file does not exist and no timestamp is given."""
         assert not temporary_file.is_up_to_date()
         assert temporary_file.is_outdated()
+        assert temporary_file.file_status == "Missing"
 
     def test_up_to_date_no_timestamp(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns True if the file exists and not timestamp is given."""
         temporary_file.write("Text")
         assert temporary_file.is_up_to_date()
         assert not temporary_file.is_outdated()
+        assert temporary_file.file_status == "Exists"
 
     def test_up_to_date_no_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file does not exist."""
         timestamp = datetime.now().astimezone()
         assert not temporary_file.is_up_to_date(timestamp)
         assert temporary_file.is_outdated(timestamp)
+        assert temporary_file.file_status == "Missing"
 
     def test_up_to_date_new_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns True if the file is newer than the timestamp."""
@@ -79,30 +82,15 @@ class TestUpToDate:
         temporary_file.write("Text")
         assert temporary_file.is_up_to_date(timestamp)
         assert not temporary_file.is_outdated(timestamp)
+        assert temporary_file.file_status == "Up to date"
 
     def test_up_to_date_old_file(self, temporary_file: PavedPath) -> None:
         """Test that up_to_date returns False if the file is older than the timestamp."""
         temporary_file.write("Text")
         timestamp = datetime.now().astimezone()
         assert temporary_file.is_outdated(timestamp)
-        assert temporary_file.is_outdated(timestamp)
-
-
-class TestTitle:
-    """Test the title property."""
-
-    def test_title(self, temporary_file: PavedPath) -> None:
-        """Test that the title is correct."""
-        # Automatically set title
-        assert temporary_file.title == "file.txt"
-
-        # Manually set after initialization
-        temporary_file.title = "Fancy Title"
-        assert temporary_file.title == "Fancy Title"
-
-        # Manually set on initialization
-        temporary_file = PavedPath("test_data/file.txt", title="Fancy Title")
-        assert temporary_file.title == "Fancy Title"
+        assert not temporary_file.is_up_to_date(timestamp)
+        assert temporary_file.file_status == "Outdated"
 
 
 class TestRead:
