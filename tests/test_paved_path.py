@@ -36,6 +36,7 @@ def temp_path_fixture(
     if temporary_file.parent == Path(TEMP_DIR_NAME):
         temporary_file.parent.delete_dir()
     yield temporary_file
+    temporary_file.delete_file()
     if temporary_file.parent.exists():
         temporary_file.parent.rmdir()
 
@@ -103,37 +104,37 @@ class TestReadText:
         temp_path.write_text("1")
         write_timestamp = temp_path.cache_timestamp
         read_path = PavedPath(temp_path)
-        assert read_path.read_text_cached() == "1"
+        assert read_path.read_text() == "1"
         assert read_path.is_outdated(write_timestamp)
 
     def test_read_text_cache(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
         read_path = PavedPath(temp_path)
-        read_path.read_text_cached()
+        read_path.read_text()
         starting_timestamp = read_path.cache_timestamp
         temp_path.write_text("2")
-        assert read_path.read_text_cached() == "1"
+        assert read_path.read_text() == "1"
         assert starting_timestamp == read_path.cache_timestamp
 
     def test_read_text_reload(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
         read_path = PavedPath(temp_path)
-        read_path.read_text_cached()
+        read_path.read_text()
         temp_path.write_text("2")
-        assert read_path.read_text_cached(reload=True) == "2"
+        assert read_path.read_text(reload=True) == "2"
         assert read_path.is_outdated(read_path.cache_timestamp)
 
     def test_read_text_check_file(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
         read_path = PavedPath(temp_path)
         temp_path.write_text("2")
-        assert read_path.read_text_cached(check_file=True) == "2"
+        assert read_path.read_text(check_file=True) == "2"
         assert read_path.is_outdated(read_path.cache_timestamp)
 
     def test_read_text_missing_file(self, temp_path: PavedPath) -> None:
         missing_file = PavedPath(temp_path / "missing")
         with pytest.raises(FileNotFoundError):
-            missing_file.read_text_cached()
+            missing_file.read_text()
 
 
 class TestReadByte:
@@ -142,37 +143,37 @@ class TestReadByte:
         temp_path.write_bytes(b"1")
         write_timestamp = temp_path.cache_timestamp
         read_path = PavedPath(temp_path)
-        assert read_path.read_bytes_cached() == b"1"
+        assert read_path.read_bytes() == b"1"
         assert read_path.is_outdated(write_timestamp)
 
     def test_read_bytes_cache(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
         read_path = PavedPath(temp_path)
-        read_path.read_bytes_cached()
+        read_path.read_bytes()
         starting_timestamp = read_path.cache_timestamp
         temp_path.write_bytes(b"2")
-        assert read_path.read_bytes_cached() == b"1"
+        assert read_path.read_bytes() == b"1"
         assert starting_timestamp == read_path.cache_timestamp
 
     def test_read_bytes_reload(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
         read_path = PavedPath(temp_path)
-        read_path.read_bytes_cached()
+        read_path.read_bytes()
         temp_path.write_bytes(b"2")
-        assert read_path.read_bytes_cached(reload=True) == b"2"
+        assert read_path.read_bytes(reload=True) == b"2"
         assert read_path.is_outdated(read_path.cache_timestamp)
 
     def test_read_bytes_check_file(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
         read_path = PavedPath(temp_path)
         temp_path.write_bytes(b"2")
-        assert read_path.read_bytes_cached(check_file=True) == b"2"
+        assert read_path.read_bytes(check_file=True) == b"2"
         assert read_path.is_outdated(read_path.cache_timestamp)
 
     def test_read_bytes_missing_file(self, temp_path: PavedPath) -> None:
         missing_file = PavedPath(temp_path / "missing")
         with pytest.raises(FileNotFoundError):
-            missing_file.read_bytes_cached()
+            missing_file.read_bytes()
 
 
 class TestClearCache:

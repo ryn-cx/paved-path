@@ -171,28 +171,22 @@ class PavedPath(Path):
         Returns:
             Passed from super().write_text.
         """
-        # The original function needs to be overridden so there is no way to
-        # write content to the file without clearing the cache. This will keep
-        # the cache in sync with whatever is written to the file.
         if clear_cache:
             self.clear_cache()
-        if write_through:
-            self.cached_read_text = data
 
-        # Make dir if needed
         self.parent.mkdir(parents=True, exist_ok=True)
-
         output = super().write_text(
             data,
             encoding=encoding,
             errors=errors,
             newline=newline,
         )
+        if write_through:
+            self.cached_read_text = data
+            self.cache_timestamp = self.aware_mtime()
 
-        self.cache_timestamp = self.aware_mtime()
         return output
 
-    @override
     def write_bytes(
         self,
         data: Buffer,
@@ -213,20 +207,16 @@ class PavedPath(Path):
                 cache.
 
         Returns:
-            Passed from super().write_bytes.
+            Passed from write_bytes().
         """
-        # The original function needs to be overridden so there is no way to
-        # write content to the file without clearing the cache. This will keep
-        # the cache in sync with whatever is written to the file.
         if clear_cache:
             self.clear_cache()
+        self.parent.mkdir(parents=True, exist_ok=True)
+        output = super().write_bytes(data)
+
         if write_through:
             self.cached_read_bytes = bytes(data)
-
-        self.parent.mkdir(parents=True, exist_ok=True)
-
-        output = super().write_bytes(data)
-        self.cache_timestamp = datetime.now().astimezone()
+            self.cache_timestamp = datetime.now().astimezone()
 
         return output
 
@@ -246,20 +236,21 @@ class PavedPath(Path):
         if self.exists():
             shutil.rmtree(self)
 
-    def read_text_cached(
+    def read_text(
         self,
         encoding: None | str = None,
         errors: None | str = None,
         *,
         reload: bool = False,
         check_file: bool = False,
+        skip_cache: bool = False,
     ) -> str:
         """Read the file in text mode and cache the result.
 
         Args:
-            encoding: Passed to super().read_text.
+            encoding: Passed to read_text.
 
-            errors: Passed to super().read_text.
+            errors: Passed to read_text.
 
             reload: * If True read the text from the file, and cache the text.
                 * If False use the cached text if it exists otherwise read the
@@ -271,21 +262,25 @@ class PavedPath(Path):
         Returns:
             The cached text of the file.
         """
+        if skip_cache:
+            return super().read_text(encoding=encoding, errors=errors)
+
         if (
             self.cached_read_text is None
             or reload
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_read_text = self.read_text(encoding=encoding, errors=errors)
+            self.cached_read_text = super().read_text(encoding=encoding, errors=errors)
             self.cache_timestamp = datetime.now().astimezone()
 
         return self.cached_read_text
 
-    def read_bytes_cached(
+    def read_bytes(
         self,
         *,
         reload: bool = False,
         check_file: bool = False,
+        skip_cache: bool = False,
     ) -> bytes:
         """Read the file in bytes mode and cache the result.
 
@@ -303,12 +298,15 @@ class PavedPath(Path):
         Returns:
             The cached bytes of the file.
         """
+        if skip_cache:
+            return super().read_bytes()
+
         if (
             self.cached_read_bytes is None
             or reload
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_read_bytes = self.read_bytes()
+            self.cached_read_bytes = super().read_bytes()
             self.cache_timestamp = datetime.now().astimezone()
 
         return self.cached_read_bytes
