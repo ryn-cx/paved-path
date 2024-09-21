@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 ITERATIONS = 100_000
 
 # Make a 1MB test file
-test_path = PavedPath("test-file")
+test_path = PavedPath(__file__).parent / "test-file"
 test_data = bytes([i % 256 for i in range(1024 * 1024)])
 test_path.write_bytes(test_data)
 
@@ -23,7 +23,6 @@ execution_time = end_time - start_time
 logging.info("read_bytes:        %.6f seconds", execution_time)
 
 # read_bytes_cached with reload=True
-test_path = PavedPath("test-file")
 start_time = time.time()
 for _ in range(ITERATIONS):
     test_path.read_bytes_cached(reload=True)

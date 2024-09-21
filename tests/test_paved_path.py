@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 # There once was an issue where the way a PavedPath was initialized would affect
 # how the cache worked. Testing all 3 of these different ways of creating a
 # PavedPath object should help prevent that from happening in the future.
-TEMP_DIR_NAME = "tests/data"
+TEMP_DIR_NAME = PavedPath(__file__).parent / "data"
 TEST_FILES: tuple[TestFileLambda, TestFileLambda, TestFileLambda] = (
     lambda request: PavedPath(f"{TEMP_DIR_NAME}/{request.node.originalname}"),
     lambda request: PavedPath(TEMP_DIR_NAME, request.node.originalname),
