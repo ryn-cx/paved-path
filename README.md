@@ -1,2 +1,2 @@
 # paved-path
-Extended version of pathlib's Path.
+Library that extends pathlib's Path.

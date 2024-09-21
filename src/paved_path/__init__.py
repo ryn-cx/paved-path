@@ -1,8 +1,7 @@
-"""Extended version of pathlib's Path."""
+"""Library that extends pathlib's Path."""
 
 from __future__ import annotations
 
-import dataclasses
 import shutil
 from datetime import date, datetime
 from pathlib import Path
@@ -20,17 +19,10 @@ if TYPE_CHECKING:
     type PavedPathTypes = StrPath | int | datetime | date | float
 
 
-@dataclasses.dataclass
-class CobblestoneCache:
-    """Cache for PavedPath."""
-
-
 class PavedPath(Path):
-    """Extended version of pathlib's Path."""
+    """Class that extends pathlib's Path."""
 
-    CACHE_CLASS = CobblestoneCache
     cache_timestamp: datetime | None = None
-
     cached_read_text: str | None = None
     cached_read_bytes: bytes | None = None
 
@@ -59,7 +51,6 @@ class PavedPath(Path):
         """
         path_fragments = [self._convert_to_path(arg) for arg in args]
         super().__init__(*path_fragments)
-        self.cache = self.CACHE_CLASS()
 
     def __truediv__(self, key: PavedPathTypes) -> Self:
         """Appends the given value to the path and returns a new path object.
