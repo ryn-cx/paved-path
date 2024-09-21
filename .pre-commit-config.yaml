@@ -1,0 +1,31 @@
+repos:
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: v4.6.0
+    hooks:
+      # General hooks
+      - id: trailing-whitespace # Clean up trailing whitespace
+
+      # Python hooks
+      - id: check-ast # Make sure Python files are valid
+      - id: check-builtin-literals # Only allow literals when creating empty data structures
+      - id: check-docstring-first # Make sure docstrings are in the correct location
+
+      # TOML hooks, useful for checking pyproject.toml
+      - id: check-toml # Validate pyproject.toml and other toml files
+
+      # YAML hooks
+      - id: check-yaml #Validate .pre-commit-config.yaml and other yaml files
+      - id: sort-simple-yaml # Clean up .pre-commit-config.yaml and other yaml files
+
+      # Compatibility hooks
+      - id: check-case-conflict # Make sure files are safe for Windows
+      - id: end-of-file-fixer # Make sure files end in a newline
+      - id: mixed-line-ending # Clean up line endings to all be the same
+      - id: fix-byte-order-marker # Remove UTF-8 byte order marker
+
+  # Format and lint Python code
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.6
+    hooks:
+      # Run the formatter.
+      - id: ruff-format

@@ -1,0 +1,54 @@
+[project]
+name = "paved-path"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "ryn-cx", email = "84663588+ryn-cx@users.noreply.github.com"},
+]
+dependencies = []
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "AGPL-3.0-or-later"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ruff>=0.6.6",
+    "pylint>=3.3.0",
+    "pre-commit>=3.8.0",
+    "pytest>=8.2.0",
+    "pylint-pytest>=1.1.8",
+    "pytest-cov>=5.0.0",
+]
+# Configure ruff
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["ANN101", "ANN102", "TD002", "TD003"]
+# ANN101: missing-type-self - Deprecated rule that is redundant. It requires
+# explicit type hints on self which is not required because the type can always
+# be inferred.
+
+# ANN102: missing-type-cls - Deprecated rule that is redundant. It requires
+# explicit type hints on cls which is not required because the type can always
+# be inferred.
+
+# TD002: missing-todo-author - This rule requires that a specific author is
+# listed for TODO comments which is pointless because the author is always me.
+
+# TD003: missing-todo-link - This rule requires that a specific issue link is
+# listed for TODO comments, this is pointless because the TODO statements are
+# the reminder to create the issue in the first place. If an issue link exists
+# then the TODO comment would not exist.
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D101", "D102", "D104", "S101"]
+# D101: undocumented-public-class - Tests do not need docstrings
+# D102: undocumented-public-method - Tests do not need docstrings
+# D104: undocumented-public-package - Tests do not need docstrings
+# S101: assert - Using asserts in tests should be allowed

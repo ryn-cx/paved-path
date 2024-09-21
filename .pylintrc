@@ -1,0 +1,9 @@
+[MASTER]
+; Official plugin for using pylint with pytest
+load-plugins=pylint_pytest
+
+[MESSAGES CONTROL]
+disable=C0115, C0116, C0301
+; C0115: missing-class-docstring - Ruff makes this redundant
+; C0116: missing-function-docstring - Ruff makes this redundant
+; C0301: line-too-long - Ruff makes this redundant
