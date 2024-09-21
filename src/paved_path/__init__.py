@@ -207,7 +207,7 @@ class PavedPath(Path):
                 cache.
 
         Returns:
-            Passed from write_bytes().
+            Passed from super().write_bytes().
         """
         if clear_cache:
             self.clear_cache()
@@ -248,20 +248,26 @@ class PavedPath(Path):
         """Read the file in text mode and cache the result.
 
         Args:
-            encoding: Passed to read_text.
+            encoding: Passed to super().read_text.
 
-            errors: Passed to read_text.
+            errors: Passed to super().read_text.
 
             reload: * If True read the text from the file, and cache the text.
                 * If False use the cached text if it exists otherwise read the
                 text from the file and cache it.
 
-            check_file: * If True check if the file is newer than the cache, and
+            check_file: If True check if the file is newer than the cache and if
                 it is reload it.
+
+            skip_cache: If True this will act like pathlib's implementation of
+                read_bytes.
 
         Returns:
             The cached text of the file.
         """
+        # This doesn't need to be an argument because you can still call
+        # Path.read_text(self), but using an argument makes it more clear as to
+        # what is being done.
         if skip_cache:
             return super().read_text(encoding=encoding, errors=errors)
 
@@ -292,12 +298,17 @@ class PavedPath(Path):
             reload: If True read the bytes from the file and update the cache.
 
             check_file: If True check if the file is newer than the cache and if
-            the file is newer than the cache read the bytes from the file and
-            update the cache.
+                it is reload it.
+
+            skip_cache: If True this will act like pathlib's implementation of
+                read_bytes.
 
         Returns:
             The cached bytes of the file.
         """
+        # This doesn't need to be an argument because you can still call
+        # Path.read_bytes(self), but using an argument makes it more clear as to
+        # what is being done.
         if skip_cache:
             return super().read_bytes()
 
