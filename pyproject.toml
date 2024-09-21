@@ -3,12 +3,12 @@ name = "paved-path"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
-    {name = "ryn-cx", email = "84663588+ryn-cx@users.noreply.github.com"},
+    { name = "ryn-cx", email = "84663588+ryn-cx@users.noreply.github.com" },
 ]
 dependencies = []
 requires-python = "==3.12.*"
 readme = "README.md"
-license = {text = "AGPL-3.0-or-later"}
+license = { text = "AGPL-3.0-or-later" }
 
 
 [tool.pdm]
