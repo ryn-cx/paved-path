@@ -1,7 +1,7 @@
 [project]
 name = "paved-path"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "Extended version of pathlib's Path."
 authors = [
     { name = "ryn-cx", email = "84663588+ryn-cx@users.noreply.github.com" },
 ]
