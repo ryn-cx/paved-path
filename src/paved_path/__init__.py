@@ -150,7 +150,7 @@ class PavedPath(Path):
         write_through: bool = True,
         clear_cache: bool = True,
     ) -> int:
-        """Manage cache, open the file in text mode, write to it, and close it.
+        """Manage cache, open the file in text mode, read it, and close the file.
 
         Args:
             data: The data to write to the file.
@@ -200,7 +200,7 @@ class PavedPath(Path):
         write_through: bool = True,
         clear_cache: bool = True,
     ) -> int:
-        """Manage cache, open the file in bytes mode, write to it, and close it.
+        """Manage cache, open the file in bytes mode, read it, and close the file.
 
         Args:
             data: The data to write to the file.
