@@ -254,7 +254,7 @@ class PavedPath(Path):
         reload: bool = False,
         check_file: bool = False,
     ) -> str:
-        """Open the file in text mode, read it, cache the result, and close the file.
+        """Read the file in text mode and cache the result.
 
         Args:
             encoding: Passed to super().read_text.
@@ -287,7 +287,7 @@ class PavedPath(Path):
         reload: bool = False,
         check_file: bool = False,
     ) -> bytes:
-        """Open the file in bytes mode, read it, cache the result, and close the file.
+        """Read the file in bytes mode and cache the result.
 
         If the file is not found in the cache the file will be read and the
         bytes will be cached. If the file is found in the cache the cached bytes
