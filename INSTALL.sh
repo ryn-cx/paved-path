@@ -1,8 +1,11 @@
-# Installation is only needed for running benchmarks
+# Install external dependencies
 pdm install
 
-# Dynamically find the python folder to make the root.pth file in
-folder_name=$(realpath .venv/lib/python*)/site-packages/root.pth
+# Dynamically find the python folder in thr .venv folder
+folder_path=$(realpath .venv/lib/python*)
 
-# Make the root folder of the project part of the path
-echo "../../../.." > $folder_name
+# Get the path for root.pth which will be created to modify the PYTHONPATH
+root_path=$folder_name/site-packages/root.pth
+
+# Add the root folder of the project to root_path so importing is simplified
+echo "../../../.." > $root_path
