@@ -23,8 +23,8 @@ class PavedPath(Path):
     """Class that extends pathlib's Path."""
 
     cache_timestamp: datetime | None = None
-    cached_read_text: str | None = None
-    cached_read_bytes: bytes | None = None
+    cached_text: str | None = None
+    cached_bytes: bytes | None = None
 
     # __new__ is defined here so the type between __new__ and __init__ match and
     # so that super is called without having type errors
@@ -92,8 +92,8 @@ class PavedPath(Path):
 
     def clear_cache(self) -> None:
         """Clear the cache."""
-        self.cached_read_text = None
-        self.cached_read_bytes = None
+        self.cached_text = None
+        self.cached_bytes = None
         self.cache_timestamp = None
 
     def aware_mtime(self) -> datetime:
@@ -182,7 +182,7 @@ class PavedPath(Path):
             newline=newline,
         )
         if write_through:
-            self.cached_read_text = data
+            self.cached_text = data
             self.cache_timestamp = self.aware_mtime()
 
         return output
@@ -215,7 +215,7 @@ class PavedPath(Path):
         output = super().write_bytes(data)
 
         if write_through:
-            self.cached_read_bytes = bytes(data)
+            self.cached_bytes = bytes(data)
             self.cache_timestamp = datetime.now().astimezone()
 
         return output
@@ -272,14 +272,14 @@ class PavedPath(Path):
             return super().read_text(encoding=encoding, errors=errors)
 
         if (
-            self.cached_read_text is None
+            self.cached_text is None
             or reload
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_read_text = super().read_text(encoding=encoding, errors=errors)
+            self.cached_text = super().read_text(encoding=encoding, errors=errors)
             self.cache_timestamp = datetime.now().astimezone()
 
-        return self.cached_read_text
+        return self.cached_text
 
     def read_bytes(
         self,
@@ -313,11 +313,11 @@ class PavedPath(Path):
             return super().read_bytes()
 
         if (
-            self.cached_read_bytes is None
+            self.cached_bytes is None
             or reload
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_read_bytes = super().read_bytes()
+            self.cached_bytes = super().read_bytes()
             self.cache_timestamp = datetime.now().astimezone()
 
-        return self.cached_read_bytes
+        return self.cached_bytes

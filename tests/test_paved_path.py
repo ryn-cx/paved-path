@@ -180,60 +180,60 @@ class TestClearCache:
     def test_clear_cache_text(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
         temp_path.clear_cache()
-        assert temp_path.cached_read_text is None
+        assert temp_path.cached_text is None
 
     def test_clear_cache_bytes(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
         temp_path.clear_cache()
-        assert temp_path.cached_read_bytes is None
+        assert temp_path.cached_bytes is None
 
 
 class TestWriteText:
     def test_write_text(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
-        assert temp_path.cached_read_text == "1"
+        assert temp_path.cached_text == "1"
 
     def test_write_text_filled_cache(self, temp_path: PavedPath) -> None:
         temp_path.write_text("1")
         temp_path.write_text("2", write_through=False)
-        assert temp_path.cached_read_text is None
+        assert temp_path.cached_text is None
 
     def test_write_text_empty_cache_no_write_through(
         self, temp_path: PavedPath,
     ) -> None:
         temp_path.write_text("1", write_through=False)
-        assert temp_path.cached_read_text is None
+        assert temp_path.cached_text is None
 
     def test_write_text_filled_cache_no_write_through(
         self, temp_path: PavedPath,
     ) -> None:
         temp_path.write_text("1")
         temp_path.write_text("2")
-        assert temp_path.cached_read_text == "2"
+        assert temp_path.cached_text == "2"
 
 
 class TestWriteBytes:
     def test_write_bytes(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
-        assert temp_path.cached_read_bytes == b"1"
+        assert temp_path.cached_bytes == b"1"
 
     def test_write_bytes_filled_cache(self, temp_path: PavedPath) -> None:
         temp_path.write_bytes(b"1")
         temp_path.write_bytes(b"2", write_through=False)
-        assert temp_path.cached_read_bytes is None
+        assert temp_path.cached_bytes is None
 
     def test_write_bytes_empty_cache_no_write_through(
         self, temp_path: PavedPath,
     ) -> None:
         temp_path.write_bytes(b"1", write_through=False)
-        assert temp_path.cached_read_bytes is None
+        assert temp_path.cached_bytes is None
 
     def test_write_bytes_filled_cache_no_write_through(
         self, temp_path: PavedPath,
     ) -> None:
         temp_path.write_bytes(b"1")
         temp_path.write_bytes(b"2")
-        assert temp_path.cached_read_bytes == b"2"
+        assert temp_path.cached_bytes == b"2"
 
 
 class TestDelete:
