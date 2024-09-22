@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 # There once was an issue where the way a PavedPath was initialized would affect
 # how the cache worked. Testing all 3 of these different ways of creating a
 # PavedPath object should help prevent that from happening in the future.
-TEMP_DIR_NAME = PavedPath(__file__).parent / "data"
+TEMP_DIR = PavedPath(__file__).parent / "data"
 TEST_FILES: tuple[TestFileLambda, TestFileLambda, TestFileLambda] = (
-    lambda request: PavedPath(f"{TEMP_DIR_NAME}/{request.node.originalname}"),
-    lambda request: PavedPath(TEMP_DIR_NAME, request.node.originalname),
-    lambda request: PavedPath(TEMP_DIR_NAME) / request.node.originalname,
+    lambda request: PavedPath(f"{TEMP_DIR}/{request.node.originalname}"),
+    lambda request: PavedPath(TEMP_DIR, request.node.originalname),
+    lambda request: PavedPath(TEMP_DIR) / request.node.originalname,
 )
 
 
@@ -41,13 +41,13 @@ def temp_path_fixture(
     request: pytest.FixtureRequest,
 ) -> Generator[PavedPath, Any, Any]:
     """Create a clean state for a temporary PavedPath, yield it, and clean up."""
-    temporary_file: PavedPath = request.param(request)
-    if temporary_file.parent == Path(TEMP_DIR_NAME):
-        temporary_file.parent.delete_dir()
-    yield temporary_file
-    temporary_file.delete_file()
-    if temporary_file.parent.exists():
-        temporary_file.parent.rmdir()
+    temp_file: PavedPath = request.param(request)
+    if temp_file.parent == Path(TEMP_DIR):
+        temp_file.parent.delete_dir()
+    yield temp_file
+    temp_file.delete_file()
+    if temp_file.parent.exists():
+        temp_file.parent.rmdir()
 
 
 class TestInputs:
