@@ -27,7 +27,6 @@ repos:
 
       # JSON hooks.
       - id: check-json
-      - id: pretty-format-json
 
       # TOML hooks.
       - id: check-toml
@@ -37,4 +36,3 @@ repos:
 
       # YAML hooks.
       - id: check-yaml
-      - id: sort-simple-yaml

@@ -115,6 +115,11 @@ name = "paved-path"
 version = "0.1.0"
 source = { editable = "." }
 
+[package.optional-dependencies]
+yaml = [
+    { name = "pyyaml" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pre-commit" },
@@ -124,6 +129,8 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0.2" }]
+provides-extras = ["yaml"]
 
 [package.metadata.requires-dev]
 dev = [
