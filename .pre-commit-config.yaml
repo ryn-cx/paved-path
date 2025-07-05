@@ -1,0 +1,40 @@
+repos:
+  # Ruff hooks (Copied from the repository).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.12.2
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [--fix]
+      # Run the formatter.
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 # Use the ref you want to point at
+    hooks:
+      # General hooks.
+      #   Make files compatible with all operating systems.
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+
+      #   Clean up files
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: [--fix=auto]
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+      # JSON hooks.
+      - id: check-json
+      - id: pretty-format-json
+
+      # TOML hooks.
+      - id: check-toml
+
+      # XML hooks.
+      - id: check-xml
+
+      # YAML hooks.
+      - id: check-yaml
+      - id: sort-simple-yaml
