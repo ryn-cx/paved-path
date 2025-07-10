@@ -1,14 +1,31 @@
 """Library for working with YAML files."""
 
-from typing import Any, override
+from collections.abc import Mapping
+from typing import Any, TypedDict, Unpack, override
 
 import yaml
 
 from .paved_path import PavedPath
 
 
+class YAMLWriteOptions(TypedDict, total=False):
+    default_style: str | None
+    default_flow_style: bool | None
+    canonical: bool | None
+    indent: int | None
+    width: float | None  # Not an accurate type hint
+    allow_unicode: bool | None
+    line_break: str | None
+    encoding: str | None
+    explicit_start: bool | None
+    explicit_end: bool | None
+    version: tuple[int, int] | None
+    tags: Mapping[str, str] | None
+    sort_keys: bool
+
+
 class YAMLFile(PavedPath):
-    """YAML file manager."""
+    """YAML file interface."""
 
     cached_yaml: Any = None
 
@@ -20,49 +37,44 @@ class YAMLFile(PavedPath):
     def safe_write_yaml(
         self,
         data: dict[Any, Any] | list[Any] | str,
-        *,
-        bypass_cache: bool = False,
+        **options: Unpack[YAMLWriteOptions],
     ) -> int:
         """Manage cache, open the yaml file in text mode, read it, and close the file.
 
         Args:
             data: The data to write to the file.
 
-            bypass_cache: If True the cache will be cleared out and not used.
+            **options: Additional options to pass to `yaml.safe_dump`.
 
         Returns:
             Passed from self.write_text().
         """
-        # If given a string make sure it is valid YAML before writing it.
-        if isinstance(data, str):
-            data = yaml.safe_load(data)
-
-        # Dump and load YAML to make sure Serialization does not cause the
-        # loaded file to be different than the file that is being written.
-        dumped_yaml = yaml.safe_dump(data, default_flow_style=False)
-        read_yaml = yaml.safe_load(dumped_yaml)
-        if read_yaml != data:
-            serialization_error_msg = (
-                "Serialization will create an output that is different from the input"
+        # No write through caches because the content being written may be different
+        # after it is dumped to a string or bytes.
+        if encoding := options.pop("encoding", None):
+            return self.write_bytes(
+                yaml.safe_dump(
+                    data,
+                    stream=None,
+                    encoding=str(encoding),
+                    **options,
+                ),  # type: ignore[reportUnknownArgumentType]
             )
-            raise ValueError(serialization_error_msg)
 
-        output = self.write_text(
-            dumped_yaml,
-            bypass_cache=bypass_cache,
+        return self.write_text(
+            yaml.safe_dump(
+                data,
+                stream=None,
+                encoding=None,
+                **options,
+            ),  # type: ignore[reportUnknownArgumentType]
         )
 
-        if not bypass_cache:
-            self.cached_yaml = data
-
-        return output
-
-    def read_yaml(
+    def safe_read_yaml(
         self,
         *,
         reload: bool = False,
         check_file: bool = False,
-        bypass_cache: bool = False,
     ) -> dict[str, Any] | list[Any]:
         """Read the file in text mode, parse it, and cache the result.
 
@@ -72,14 +84,9 @@ class YAMLFile(PavedPath):
             check_file: If True check if the file is newer than the cache and if
                 it is reload it.
 
-            bypass_cache: If True the cache will be cleared out and not used.
-
         Returns:
-            The cached parsed YAML of the file.
+            The parsed YAML of the file.
         """
-        if bypass_cache:
-            return yaml.safe_load(self.read_text(bypass_cache=bypass_cache))
-
         if (
             self.cached_yaml is None
             or reload
@@ -87,6 +94,11 @@ class YAMLFile(PavedPath):
             # cache and it needs to be reloaded.
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_yaml = yaml.safe_load(self.read_text(reload=True))
+            self.cached_yaml = yaml.safe_load(
+                self.read_text(
+                    reload=reload,
+                    check_file=check_file,
+                ),
+            )
 
         return self.cached_yaml

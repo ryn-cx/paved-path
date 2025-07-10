@@ -1,13 +1,35 @@
 """Library for working with JSON files."""
 
 import json
-from typing import Any, override
+from collections.abc import Callable
+from typing import Any, TypedDict, Unpack, override
 
 from .paved_path import PavedPath
 
 
+class JSONDumpOptions(TypedDict, total=False):
+    skipkeys: bool
+    ensure_ascii: bool
+    check_circular: bool
+    allow_nan: bool
+    cls: type[json.JSONEncoder] | None
+    indent: int | None
+    separators: tuple[str, str] | None
+    default: Callable[[Any], Any] | None
+    sort_keys: bool
+
+
+class JSONLoadOptions(TypedDict, total=False):
+    cls: type[json.JSONDecoder] | None
+    object_hook: Callable[[dict[Any, Any]], Any] | None
+    parse_float: Callable[[str], float] | None
+    parse_int: Callable[[str], int] | None
+    parse_constant: Callable[[str], Any] | None
+    object_pairs_hook: Callable[[list[tuple[str, Any]]], Any] | None
+
+
 class JSONFile(PavedPath):
-    """JSON file manager."""
+    """JSON file interface."""
 
     cached_json: Any = None
 
@@ -18,9 +40,8 @@ class JSONFile(PavedPath):
 
     def write_json(
         self,
-        data: dict[Any, Any] | list[Any] | str,
-        *,
-        bypass_cache: bool = False,
+        data: Any,  # noqa: ANN401
+        **options: Unpack[JSONDumpOptions],
     ) -> int:
         """Manage cache, open the json file in text mode, read it, and close the file.
 
@@ -31,40 +52,22 @@ class JSONFile(PavedPath):
                 False write the text to the file and clear out the cache so it
                 stays in sync.
 
-            bypass_cache: If True the cache will be cleared out and not used.
+            **options: Additional options to pass to `json.dumps`.
 
 
         Returns:
             Passed from self.write_text().
         """
-        # If given a string make sure it is valid JSON before writing it.
-        if isinstance(data, str):
-            data = json.loads(data)
-
-        # Dump and load JSON to make sure Serialization does not cause the
-        # loaded file to be different than the file that is being written.
-        dumped_json = json.dumps(data)
-        read_json = json.loads(dumped_json)
-        if read_json != data:
-            msg = "Serialization will create an output that is different from the input"
-            raise ValueError(msg)
-
-        output = self.write_text(
-            dumped_json,
-            bypass_cache=bypass_cache,
-        )
-
-        if not bypass_cache:
-            self.cached_json = data
-
-        return output
+        # No write through caches because the content being written may be different
+        # after it is dumped to a string.
+        return self.write_text(json.dumps(data, **options))
 
     def read_json(
         self,
         *,
         reload: bool = False,
         check_file: bool = False,
-        bypass_cache: bool = False,
+        **options: Unpack[JSONLoadOptions],
     ) -> dict[str, Any] | list[Any]:
         """Read the file in text mode, parse it, and cache the result.
 
@@ -74,14 +77,11 @@ class JSONFile(PavedPath):
             check_file: If True check if the file is newer than the cache and if
                 it is reload it.
 
-            bypass_cache: If True the cache will be cleared out and not used.
+            **options: Additional options to pass to `json.loads`.
 
         Returns:
-            The cached parsed JSON of the file.
+            The parsed JSON of the file.
         """
-        if bypass_cache:
-            return json.loads(self.read_text(bypass_cache=bypass_cache))
-
         if (
             self.cached_json is None
             or reload
@@ -89,6 +89,12 @@ class JSONFile(PavedPath):
             # cache and it needs to be reloaded.
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
-            self.cached_json = json.loads(self.read_text(reload=True))
+            self.cached_json = json.loads(
+                self.read_text(
+                    reload=reload,
+                    check_file=check_file,
+                ),
+                **options,
+            )
 
         return self.cached_json

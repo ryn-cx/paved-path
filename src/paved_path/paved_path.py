@@ -120,11 +120,9 @@ class PavedPath(Path):
     def write_text(
         self,
         data: str,
-        encoding: str | None = "utf-8",
+        encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-        *,
-        bypass_cache: bool = False,
     ) -> int:
         """Manage cache, open the file in text mode, read it, and close the file.
 
@@ -137,15 +135,12 @@ class PavedPath(Path):
 
             newline: Passed to super().write_text.
 
-            bypass_cache: If True the cache will be cleared out and not used.
-
         Returns:
             Passed from super().write_text.
         """
-        self.clear_cache()
-
         # Automatically make parent directories if needed for convenience
         self.parent.mkdir(parents=True, exist_ok=True)
+
         output = super().write_text(
             data,
             encoding=encoding,
@@ -153,7 +148,11 @@ class PavedPath(Path):
             newline=newline,
         )
 
-        if not bypass_cache:
+        self.clear_cache()
+        # Only store the string in the cache if write_text has no parameters. If there
+        # are parameters the string may be modified when writing to the file and
+        # storing the original string would be incorrect.
+        if encoding is errors is newline is None:
             self.cached_text = data
             self.cache_timestamp = self.aware_mtime()
 
@@ -163,28 +162,22 @@ class PavedPath(Path):
     def write_bytes(
         self,
         data: Buffer,
-        *,
-        bypass_cache: bool = False,
     ) -> int:
         """Manage cache, open the file in bytes mode, read it, and close the file.
 
         Args:
             data: The data to write to the file.
 
-            bypass_cache: If True the cache will be cleared out and not used.
-
         Returns:
             Passed from super().write_bytes().
         """
-        self.clear_cache()
-
         # Automatically make parent directories if needed for convenience
         self.parent.mkdir(parents=True, exist_ok=True)
         output = super().write_bytes(data)
 
-        if not bypass_cache:
-            self.cached_bytes = bytes(data)
-            self.cache_timestamp = self.aware_mtime()
+        self.clear_cache()
+        self.cached_bytes = bytes(data)
+        self.cache_timestamp = self.aware_mtime()
 
         return output
 
@@ -197,12 +190,13 @@ class PavedPath(Path):
 
     @override
     def rmdir(self) -> None:
+        self.clear_cache()
         super().rmdir()
 
     @override
     def unlink(self, missing_ok: bool = False) -> None:
-        super().unlink(missing_ok=missing_ok)
         self.clear_cache()
+        super().unlink(missing_ok=missing_ok)
 
     @override
     def read_text(
@@ -212,7 +206,6 @@ class PavedPath(Path):
         *,
         reload: bool = False,
         check_file: bool = False,
-        bypass_cache: bool = False,
     ) -> str:
         """Read the file in text mode and cache the result.
 
@@ -228,14 +221,9 @@ class PavedPath(Path):
             check_file: If True check if the file is newer than the cache and if
                 it is reload it.
 
-            bypass_cache: If True the cache will be cleared out and not used.
-
         Returns:
-            The cached text of the file.
+            The text of the file.
         """
-        if bypass_cache:
-            return super().read_text(encoding=encoding, errors=errors)
-
         if (
             self.cached_text is None
             or reload
@@ -243,6 +231,7 @@ class PavedPath(Path):
             # cache and it needs to be reloaded.
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
+            self.clear_cache()
             self.cached_text = super().read_text(encoding=encoding, errors=errors)
             self.cache_timestamp = self.aware_mtime()
 
@@ -254,7 +243,6 @@ class PavedPath(Path):
         *,
         reload: bool = False,
         check_file: bool = False,
-        bypass_cache: bool = False,
     ) -> bytes:
         """Read the file in bytes mode and cache the result.
 
@@ -268,14 +256,9 @@ class PavedPath(Path):
             check_file: If True check if the file is newer than the cache and if
                 it is reload it.
 
-            bypass_cache: If True the cache will be cleared out and not used.
-
         Returns:
-            The cached bytes of the file.
+            The bytes of the file.
         """
-        if bypass_cache:
-            return super().read_bytes()
-
         if (
             self.cached_bytes is None
             or reload
@@ -283,6 +266,7 @@ class PavedPath(Path):
             # cache and it needs to be reloaded.
             or (check_file and self.is_up_to_date(self.cache_timestamp))
         ):
+            self.clear_cache()
             self.cached_bytes = super().read_bytes()
             self.cache_timestamp = self.aware_mtime()
 

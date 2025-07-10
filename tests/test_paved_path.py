@@ -59,235 +59,266 @@ class TestInputs:
 
     @pytest.mark.parametrize(("test_input", "expected"), INPUTS)
     def test_inputs(self, test_input: str, expected: str) -> None:
+        """Test that PavedPath can be created from various inputs."""
         assert PavedPath(test_input) == Path(expected)
         assert PavedPath(test_input, test_input) == Path(expected, expected)
         assert PavedPath(test_input) / test_input == Path(expected) / expected
 
     def test_blank(self) -> None:
+        """Test that PavedPath can be created with no arguments."""
         assert PavedPath() == Path()
 
 
 class TestUpToDateAndOutdated:
     def test_up_to_date_no_file_or_timestamp(self, temp_file: PavedPath) -> None:
+        """Test that a file is outdated when it does not exist."""
         assert not temp_file.is_up_to_date()
         assert temp_file.is_outdated()
 
     def test_up_to_date_no_timestamp(self, temp_file: PavedPath) -> None:
+        """Test that a file is up to date when it exists."""
         temp_file.write_text("Text")
+
         assert temp_file.is_up_to_date()
         assert not temp_file.is_outdated()
 
     def test_up_to_date_no_file(self, temp_file: PavedPath) -> None:
+        """Test that a file is outdated when it does not exist with a timestamp."""
         timestamp = datetime.now().astimezone()
+
         assert not temp_file.is_up_to_date(timestamp)
         assert temp_file.is_outdated(timestamp)
 
     def test_up_to_date_new_file(self, temp_file: PavedPath) -> None:
+        """Test that a file is up to date when it exists with a new timestamp."""
         timestamp = datetime.now().astimezone()
         sleep(0.001)
         temp_file.write_text("Text")
+
         assert temp_file.is_up_to_date(timestamp)
         assert not temp_file.is_outdated(timestamp)
 
     def test_up_to_date_old_file(self, temp_file: PavedPath) -> None:
+        """Test that a file is outdated when it exists with an old timestamp."""
         temp_file.write_text("Text")
         sleep(0.001)
         timestamp = datetime.now().astimezone()
+
         assert temp_file.is_outdated(timestamp)
         assert not temp_file.is_up_to_date(timestamp)
 
 
 class TestRead:
     def test_read_text(self, temp_file: PavedPath) -> None:
-        temp_file.write_text("1")
-        alt_file = PavedPath(temp_file)
-        assert alt_file.read_text() == "1"
-        assert alt_file.cached_bytes is None
+        """Test reading a file and filling the cache."""
+        Path(temp_file).write_text("1")
+
+        assert temp_file.read_text() == "1"
+        assert temp_file.cached_text == "1"
+        assert temp_file.cached_bytes is None
 
     def test_read_bytes(self, temp_file: PavedPath) -> None:
-        temp_file.write_bytes(b"1")
-        alt_file = PavedPath(temp_file)
-        assert alt_file.read_bytes() == b"1"
-        assert alt_file.cached_text is None
+        """Test reading a file and filling the cache."""
+        Path(temp_file).write_bytes(b"1")
 
-    def test_read_text_bypass_cache(self, temp_file: PavedPath) -> None:
+        assert temp_file.read_bytes() == b"1"
+        assert temp_file.cached_bytes == b"1"
+        assert temp_file.cached_text is None
+
+    def test_read_text_from_cache(self, temp_file: PavedPath) -> None:
+        """Test that the cache is used when reading a file a second time."""
         temp_file.write_text("1")
-        alt_file = PavedPath(temp_file)
-        assert alt_file.read_text(bypass_cache=True) == "1"
-        assert cache_is_empty(alt_file)
-
-    def test_read_bytes_bypass_cache(self, temp_file: PavedPath) -> None:
-        temp_file.write_bytes(b"1")
-        alt_file = PavedPath(temp_file)
-        assert alt_file.read_bytes(bypass_cache=True) == b"1"
-        assert cache_is_empty(alt_file)
-
-    def test_read_text_cache(self, temp_file: PavedPath) -> None:
-        """Make sure the file cache is used when reading a file a second time."""
-        temp_file.write_text("1")
-        alt_file = PavedPath(temp_file)
+        temp_file.read_text()
         sleep(0.001)
-        alt_file.write_text("2")
+        Path(temp_file).write_text("2")
+
         assert temp_file.read_text() == "1"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert temp_file.cache_timestamp < alt_file.cache_timestamp
+        assert temp_file.cache_timestamp < temp_file.aware_mtime()
 
     def test_read_bytes_from_cache(self, temp_file: PavedPath) -> None:
-        """Make sure the file cache is used when reading a file a second time."""
+        """Test that the cache is used when reading a file a second time."""
         temp_file.write_bytes(b"1")
-        alt_file = PavedPath(temp_file)
+        temp_file.read_bytes()
         sleep(0.001)
-        alt_file.write_bytes(b"2")
+        Path(temp_file).write_bytes(b"2")
+
         assert temp_file.read_bytes() == b"1"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert temp_file.cache_timestamp < alt_file.cache_timestamp
+        assert temp_file.cache_timestamp < temp_file.aware_mtime()
 
     def test_read_text_reload(self, temp_file: PavedPath) -> None:
-        """Make sure the file cache reloads correctly."""
+        """Test that the cache is reloaded when reload=True."""
         temp_file.write_text("1")
-        alt_file = PavedPath(temp_file)
         sleep(0.001)
-        alt_file.write_text("2")
+        PavedPath(temp_file).write_text("2")
+
         assert temp_file.read_text(reload=True) == "2"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert alt_file.cache_timestamp == temp_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_read_bytes_reload(self, temp_file: PavedPath) -> None:
-        """Make sure the file cache reloads correctly."""
+        """Test that the cache is reloaded when reload=True."""
         temp_file.write_bytes(b"1")
-        alt_file = PavedPath(temp_file)
         sleep(0.001)
-        alt_file.write_bytes(b"2")
+        PavedPath(temp_file).write_bytes(b"2")
+
         assert temp_file.read_bytes(reload=True) == b"2"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert alt_file.cache_timestamp == temp_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_read_text_check_file(self, temp_file: PavedPath) -> None:
+        """Test that the cache is reloaded when check_file=True and the file is new."""
         temp_file.write_text("1")
-        alt_file = PavedPath(temp_file)
         sleep(0.001)
-        alt_file.write_text("2")
+        PavedPath(temp_file).write_text("2")
+
         assert temp_file.read_text(check_file=True) == "2"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert temp_file.cache_timestamp == alt_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_read_bytes_check_file(self, temp_file: PavedPath) -> None:
+        """Test that the cache is reloaded when check_file=True and the file is new."""
         temp_file.write_bytes(b"1")
-        alt_file = PavedPath(temp_file)
         sleep(0.001)
-        alt_file.write_bytes(b"2")
+        PavedPath(temp_file).write_bytes(b"2")
+
         assert temp_file.read_bytes(check_file=True) == b"2"
-        assert alt_file.cache_timestamp
         assert temp_file.cache_timestamp
-        assert temp_file.cache_timestamp == alt_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_read_text_missing_file(self, temp_file: PavedPath) -> None:
+        """Test that reading a missing file raises an error."""
         with pytest.raises(FileNotFoundError):
             temp_file.read_text()
 
     def test_read_bytes_missing_file(self, temp_file: PavedPath) -> None:
+        """Test that reading a missing file raises an error."""
         with pytest.raises(FileNotFoundError):
             temp_file.read_bytes()
 
 
 class TestClearCache:
     def test_clear_cache_text(self, temp_file: PavedPath) -> None:
+        """Test that clearing the cache works."""
         temp_file.write_text("1")
         temp_file.clear_cache()
+
         assert cache_is_empty(temp_file)
 
     def test_clear_cache_bytes(self, temp_file: PavedPath) -> None:
+        """Test that clearing the cache works."""
         temp_file.write_bytes(b"1")
         temp_file.clear_cache()
+
         assert cache_is_empty(temp_file)
 
 
 class TestWrite:
     def test_write_text(self, temp_file: PavedPath) -> None:
+        """Test that writing to a file works."""
         temp_file.write_text("1")
+
+        assert Path(temp_file).read_text() == "1"
         assert temp_file.cached_text == "1"
         assert temp_file.cached_bytes is None
-        assert temp_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_write_bytes(self, temp_file: PavedPath) -> None:
+        """Test that writing to a file works."""
         temp_file.write_bytes(b"1")
+
+        assert Path(temp_file).read_bytes() == b"1"
         assert temp_file.cached_bytes == b"1"
         assert temp_file.cached_text is None
-        assert temp_file.cache_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_write_text_filled_cache(self, temp_file: PavedPath) -> None:
+        """Test that writing to a file works when the cache is full."""
         temp_file.write_text("1")
-        original_timestamp = temp_file.cache_timestamp
         sleep(0.001)
         temp_file.write_text("2")
+
+        assert Path(temp_file).read_text() == "2"
         assert temp_file.cached_text == "2"
         assert temp_file.cached_bytes is None
-        assert temp_file.cache_timestamp
-        assert original_timestamp
-        assert temp_file.cache_timestamp > original_timestamp
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
     def test_write_bytes_filled_cache(self, temp_file: PavedPath) -> None:
+        """Test that writing to a file works when the cache is full."""
         temp_file.write_bytes(b"1")
-        original_timestamp = temp_file.cache_timestamp
         sleep(0.001)
         temp_file.write_bytes(b"2")
+
+        assert Path(temp_file).read_bytes() == b"2"
         assert temp_file.cached_bytes == b"2"
         assert temp_file.cached_text is None
-        assert temp_file.cache_timestamp
-        assert original_timestamp
-        assert temp_file.cache_timestamp > original_timestamp
-
-    def test_write_text_empty_cache_bypass(
-        self,
-        temp_file: PavedPath,
-    ) -> None:
-        temp_file.write_text("1", bypass_cache=True)
-        assert cache_is_empty(temp_file)
-
-    def test_write_bytes_empty_cache_bypass(
-        self,
-        temp_file: PavedPath,
-    ) -> None:
-        temp_file.write_bytes(b"1", bypass_cache=True)
-        assert cache_is_empty(temp_file)
-
-    def test_write_text_full_cache_bypass(
-        self,
-        temp_file: PavedPath,
-    ) -> None:
-        temp_file.write_text("1")
-        temp_file.write_text("2", bypass_cache=True)
-        assert cache_is_empty(temp_file)
-
-    def test_write_bytes_full_cache_bypass(
-        self,
-        temp_file: PavedPath,
-    ) -> None:
-        temp_file.write_bytes(b"1")
-        temp_file.write_bytes(b"2", bypass_cache=True)
-        assert cache_is_empty(temp_file)
+        assert temp_file.cache_timestamp == temp_file.aware_mtime()
 
 
 class TestDelete:
+    def test_unlink_file(self, temp_file: PavedPath) -> None:
+        """Test that unlinking a file works."""
+        temp_file.write_text("1")
+        temp_file.unlink()
+
+        assert not temp_file.exists()
+        assert cache_is_empty(temp_file)
+
     def test_unlink_path_that_does_not_exist(self, temp_file: PavedPath) -> None:
+        """Test that unlinking a missing file raises an error."""
         with pytest.raises(FileNotFoundError):
             temp_file.unlink()
 
+    def test_unlink_path_that_is_a_directory(self, temp_file: PavedPath) -> None:
+        """Test that unlinking a directory raises an error."""
+        temp_file.mkdir()
+        with pytest.raises(PermissionError):
+            temp_file.unlink()
+
+    def test_rmdir_empty_directory(self, temp_file: PavedPath) -> None:
+        """Test that removing an empty directory works."""
+        temp_file.mkdir()
+        temp_file.rmdir()
+        assert not temp_file.exists()
+        assert cache_is_empty(temp_file)
+
     def test_rmdir_path_that_does_not_exist(self, temp_file: PavedPath) -> None:
+        """Test that removing a missing directory raises an error."""
         with pytest.raises(FileNotFoundError):
             temp_file.rmdir()
 
-    def test_rmdtree_path_that_does_not_exist(self, temp_file: PavedPath) -> None:
+    def test_rmdir_path_that_is_a_file(self, temp_file: PavedPath) -> None:
+        """Test that removing a file raises an error."""
+        temp_file.write_text("1")
+        with pytest.raises(NotADirectoryError):
+            temp_file.rmdir()
+
+    def test_rmdir_non_empty_directory(self, temp_file: PavedPath) -> None:
+        """Test that removing a non-empty directory raises an error."""
+        temp_file.mkdir()
+        (temp_file / "child").write_text("1")
+        with pytest.raises(OSError, match="The directory is not empty"):
+            temp_file.rmdir()
+
+    def test_rmtree_path_that_does_not_exist(self, temp_file: PavedPath) -> None:
+        """Test that removing a missing directory raises an error."""
         with pytest.raises(FileNotFoundError):
             temp_file.rmtree()
 
-    def test_delete_file(self, temp_file: PavedPath) -> None:
+    def test_rmtree_path_that_is_a_file(self, temp_file: PavedPath) -> None:
+        """Test that removing a file raises an error."""
         temp_file.write_text("1")
-        temp_file.unlink()
+        with pytest.raises(NotADirectoryError):
+            temp_file.rmtree()
+
+    def test_rmtree_directory(self, temp_file: PavedPath) -> None:
+        """Test that removing a directory and its contents works."""
+        temp_file.mkdir()
+        (temp_file / "child1").write_text("1")
+        (temp_file / "child2").mkdir()
+        (temp_file / "child2" / "grandchild").write_text("2")
+        temp_file.rmtree()
+
         assert not temp_file.exists()
         assert cache_is_empty(temp_file)
