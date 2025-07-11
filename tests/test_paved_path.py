@@ -127,7 +127,7 @@ class TestRead:
 
     def test_read_text_from_cache(self, temp_file: PavedPath) -> None:
         """Test that the cache is used when reading a file a second time."""
-        temp_file.write_text("1")
+        Path(temp_file).write_text("1")
         temp_file.read_text()
         sleep(0.001)
         Path(temp_file).write_text("2")
@@ -138,7 +138,7 @@ class TestRead:
 
     def test_read_bytes_from_cache(self, temp_file: PavedPath) -> None:
         """Test that the cache is used when reading a file a second time."""
-        temp_file.write_bytes(b"1")
+        Path(temp_file).write_bytes(b"1")
         temp_file.read_bytes()
         sleep(0.001)
         Path(temp_file).write_bytes(b"2")

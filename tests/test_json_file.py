@@ -43,17 +43,17 @@ class TestJSONFileRead:
         """Test reading a file and filling the cache."""
         test_data = {"key": "value"}
         Path(temp_json_file).write_text(json.dumps(test_data))
-        alt_file = JSONFile(temp_json_file)
 
-        assert alt_file.read_json() == test_data
-        assert alt_file.cached_text == json.dumps(test_data)
-        assert alt_file.cached_bytes is None
+        assert temp_json_file.read_json() == test_data
+        assert temp_json_file.cached_text == json.dumps(test_data)
+        assert temp_json_file.cached_bytes is None
 
     def test_read_json_from_cache(self, temp_json_file: JSONFile) -> None:
         """Test that the cache is used when reading a file a second time."""
         test_data_1 = {"key_1": "value_1"}
         test_data_2 = {"key_2": "value_2"}
-        temp_json_file.write_json(test_data_1)
+        Path(temp_json_file).write_text(json.dumps(test_data_1))
+        temp_json_file.read_json()
         sleep(0.001)
         Path(temp_json_file).write_text(json.dumps(test_data_2))
 
@@ -65,7 +65,8 @@ class TestJSONFileRead:
         """Test that the cache is reloaded when reload=True."""
         test_data_1 = {"key_1": "value_1"}
         test_data_2 = {"key_2": "value_2"}
-        temp_json_file.write_json(test_data_1)
+        Path(temp_json_file).write_text(json.dumps(test_data_1))
+        temp_json_file.read_json()
         sleep(0.001)
         Path(temp_json_file).write_text(json.dumps(test_data_2))
 
@@ -77,7 +78,8 @@ class TestJSONFileRead:
         """Test that the cache is reloaded when check_file=True and the file is new."""
         test_data_1 = {"key_1": "value_1"}
         test_data_2 = {"key_2": "value_2"}
-        temp_json_file.write_json(test_data_1)
+        Path(temp_json_file).write_text(json.dumps(test_data_1))
+        temp_json_file.read_json()
         sleep(0.001)
         Path(temp_json_file).write_text(json.dumps(test_data_2))
 

@@ -34,7 +34,7 @@ class YAMLFile(PavedPath):
         self.cached_yaml = None
         super().clear_cache()
 
-    def safe_write_yaml(
+    def write_yaml(
         self,
         data: dict[Any, Any] | list[Any] | str,
         **options: Unpack[YAMLWriteOptions],
@@ -70,13 +70,49 @@ class YAMLFile(PavedPath):
             ),  # type: ignore[reportUnknownArgumentType]
         )
 
-    def safe_read_yaml(
+    def unsafe_write_yaml(
+        self,
+        data: dict[Any, Any] | list[Any] | str,
+        **options: Unpack[YAMLWriteOptions],
+    ) -> int:
+        """Manage cache, open the yaml file in text mode, read it, and close the file.
+
+        Args:
+            data: The data to write to the file.
+
+            **options: Additional options to pass to `yaml.safe_dump`.
+
+        Returns:
+            Passed from self.write_text().
+        """
+        # No write through caches because the content being written may be different
+        # after it is dumped to a string or bytes.
+        if encoding := options.pop("encoding", None):
+            return self.write_bytes(
+                yaml.dump(
+                    data,
+                    stream=None,
+                    encoding=str(encoding),
+                    **options,
+                ),  # type: ignore[reportUnknownArgumentType]
+            )
+
+        return self.write_text(
+            yaml.dump(
+                data,
+                stream=None,
+                encoding=None,
+                **options,
+            ),  # type: ignore[reportUnknownArgumentType]
+        )
+
+    def read_yaml(
         self,
         *,
         reload: bool = False,
         check_file: bool = False,
     ) -> dict[str, Any] | list[Any]:
-        """Read the file in text mode, parse it, and cache the result.
+        """DANGEROUSLY Read the file in text mode, parse it, and cache the result.
 
         Args:
             reload: If True read the bytes from the file and update the cache.
@@ -99,6 +135,52 @@ class YAMLFile(PavedPath):
                     reload=reload,
                     check_file=check_file,
                 ),
+            )
+
+        return self.cached_yaml
+
+    def unsafe_read_yaml(
+        self,
+        *,
+        reload: bool = False,
+        check_file: bool = False,
+        loader: type[yaml.Loader]
+        | type[yaml.BaseLoader]
+        | type[yaml.FullLoader]
+        | type[yaml.SafeLoader]
+        | type[yaml.UnsafeLoader]
+        | type[yaml.CLoader]
+        | type[yaml.CBaseLoader]
+        | type[yaml.CFullLoader]
+        | type[yaml.CSafeLoader]
+        | type[yaml.CUnsafeLoader] = yaml.Loader,
+    ) -> dict[str, Any] | list[Any]:
+        """DANGEROUSLY Read the file in text mode, parse it, and cache the result.
+
+        Args:
+            reload: If True read the bytes from the file and update the cache.
+
+            check_file: If True check if the file is newer than the cache and if
+                it is reload it.
+
+            loader: The YAML loader class to use when parsing the file.
+
+        Returns:
+            The parsed YAML of the file.
+        """
+        if (
+            self.cached_yaml is None
+            or reload
+            # If the file is up to date that means the file's content is newer than the
+            # cache and it needs to be reloaded.
+            or (check_file and self.is_up_to_date(self.cache_timestamp))
+        ):
+            self.cached_yaml = yaml.load(
+                self.read_text(
+                    reload=reload,
+                    check_file=check_file,
+                ),
+                Loader=loader,  # noqa: S506
             )
 
         return self.cached_yaml
